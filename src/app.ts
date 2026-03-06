@@ -5,6 +5,7 @@ import mt5Routes from './api/routes/mt5.routes';
 import healthRoutes from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error-handler';
 import { logger } from './config/logger';
+import path from 'path';
 
 export function createApp(): express.Application {
   const app = express();
@@ -39,7 +40,10 @@ export function createApp(): express.Application {
   });
 
   // ── Routes ───────────────────────────────────────────────────────────────────
-  app.use('/', healthRoutes);
+  // Serve Telegram Mini App static frontend
+  app.use(express.static(path.join(process.cwd(), 'public')));
+  
+  app.use('/api', healthRoutes); // Move health to /api to prevent conflicts
   app.use('/api/mt5', mt5Routes);
 
   // ── 404 handler ─────────────────────────────────────────────────────────────

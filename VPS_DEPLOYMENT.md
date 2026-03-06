@@ -80,7 +80,8 @@ To connect the Telegram bot without "unsafe" warnings (like ngrok gives), use Cl
    ```powershell
    cloudflared.exe tunnel --url http://localhost:8080
    ```
-3. Copy the generated `.trycloudflare.com` URL and use it in your Telegram Bot webhook/frontend config.
+3. Copy the generated `.trycloudflare.com` URL.
+4. Go to **@BotFather** on Telegram, use `/setmenubutton`, select your bot, and paste the Cloudflare URL. This makes the "Menu" button open your new Frontend!
 
 ---
 

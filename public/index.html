@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Connect MT5 Account</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #1c1c1e);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #ebebf599);
+            --link-color: var(--tg-theme-link-color, #0a84ff);
+            --button-color: var(--tg-theme-button-color, #0a84ff);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            overscroll-behavior-y: none;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0a84ff, #5ac8fa);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 8px 16px rgba(10, 132, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        p.subtitle {
+            color: var(--hint-color);
+            font-size: 15px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            background-color: var(--secondary-bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-row {
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-row:last-child {
+            border-bottom: none;
+        }
+
+        .input-row label {
+            width: 80px;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 16px;
+            padding: 16px 0;
+            outline: none;
+            width: 100%;
+        }
+
+        input::placeholder {
+            color: var(--hint-color);
+        }
+
+        .btn {
+            background-color: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s, background-color 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            background-color: var(--hint-color);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.error {
+            display: block;
+            background-color: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+        }
+        
+        .status.success {
+            display: block;
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+        
+        .status.launching {
+            display: block;
+            background-color: rgba(10, 132, 255, 0.1);
+            color: #0a84ff;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo">E_FX</div>
+    <h1>Connect MT5</h1>
+    <p class="subtitle">Securely link your broker account.</p>
+
+    <div class="input-group">
+        <div class="input-row">
+            <label for="login">Login</label>
+            <input type="number" id="login" placeholder="Account Number" inputmode="numeric">
+        </div>
+        <div class="input-row">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Master Password">
+        </div>
+        <div class="input-row">
+            <label for="server">Server</label>
+            <input type="text" id="server" placeholder="e.g. MetaQuotes-Demo">
+        </div>
+    </div>
+
+    <div id="statusAlert" class="status"></div>
+
+    <button id="connectBtn" class="btn" onclick="submitCredentials()">Connect Terminal</button>
+</div>
+
+<script>
+    // Initialize Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Opens it to full height
+    tg.ready();
+
+    // The backend API URL will logically be the same host serving this HTML
+    const API_BASE_URL = window.location.origin;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const statusAlert = document.getElementById('statusAlert');
+    
+    let pollInterval = null;
+
+    function setAlert(message, type) {
+        statusAlert.className = `status ${type}`;
+        statusAlert.innerHTML = message;
+    }
+
+    async function submitCredentials() {
+        const login = document.getElementById('login').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const server = document.getElementById('server').value.trim();
+
+        if (!login || !password || !server) {
+            setAlert('Please fill in all fields.', 'error');
+            return;
+        }
+
+        // Must run inside Telegram to have initData
+        if (!tg.initData) {
+            setAlert('Error: Telegram Mini App environment not detected.', 'error');
+            // For testing outside telegram, you can comment this out, but the backend will reject without auth anyway.
+            return;
+        }
+
+        connectBtn.disabled = true;
+        setAlert('<div class="loader"></div> Queueing Launch...', 'launching');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/mt5/connect`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-telegram-init-data': tg.initData
+                },
+                body: JSON.stringify({ login, password, server })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Connection failed.');
+            }
+
+            // Successfully queued / launching
+            setAlert('<div class="loader"></div> Booting Terminal (Wait 15s)...', 'launching');
+            
+            // Start polling the status
+            startPollingStatus(login);
+
+        } catch (error) {
+            setAlert(error.message, 'error');
+            connectBtn.disabled = false;
+        }
+    }
+
+    function startPollingStatus(accountId) {
+        if (pollInterval) clearInterval(pollInterval);
+
+        pollInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/mt5/status/${accountId}`, {
+                    headers: { 'x-telegram-init-data': tg.initData }
+                });
+                
+                if (!res.ok) return; // Keep polling
+                
+                const data = await res.json();
+                
+                if (data.status === 'connected') {
+                    clearInterval(pollInterval);
+                    setAlert('✅ Account Connected Successfully!', 'success');
+                    connectBtn.style.display = 'none';
+                    
+                    // Trigger Telegram haptic feedback and notify bot
+                    tg.HapticFeedback.notificationOccurred('success');
+                    
+                    setTimeout(() => {
+                        tg.close(); // Close the mini app when done
+                    }, 3000);
+                } else if (data.status === 'failed') {
+                    clearInterval(pollInterval);
+                    setAlert('❌ Failed to connect. Invalid credentials or server.', 'error');
+                    connectBtn.disabled = false;
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
+                
+            } catch (e) {
+                console.error('Polling error', e);
+            }
+        }, 5000); // Check every 5 seconds
+    }
+</script>
+
+</body>
+</html>
