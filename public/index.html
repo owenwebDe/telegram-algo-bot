@@ -190,7 +190,7 @@
         </div>
         <div class="input-row">
             <label for="server">Server</label>
-            <input type="text" id="server" placeholder="e.g. MetaQuotes-Demo">
+            <input type="text" id="server" value="CribMarket" readonly style="color: var(--hint-color); cursor: not-allowed;">
         </div>
     </div>
 
@@ -229,9 +229,9 @@
         }
 
         // Must run inside Telegram to have initData
-        if (!tg.initData) {
+        if (!tg || !tg.initData) {
+            alert('❌ environment error: please open this via the Telegram Bot Menu button, not a standard browser link!');
             setAlert('Error: Telegram Mini App environment not detected.', 'error');
-            // For testing outside telegram, you can comment this out, but the backend will reject without auth anyway.
             return;
         }
 
