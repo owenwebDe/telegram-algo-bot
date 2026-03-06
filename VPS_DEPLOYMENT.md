@@ -73,6 +73,15 @@ npx tsc
 node dist/server.js
 ```
 
+## Step 7: Expose API securely (Cloudflare Tunnels)
+To connect the Telegram bot without "unsafe" warnings (like ngrok gives), use Cloudflare Tunnels.
+1. Download `cloudflared.exe` from the [official Cloudflare releases](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
+2. Run a Quick Tunnel for immediate testing:
+   ```powershell
+   cloudflared.exe tunnel --url http://localhost:8080
+   ```
+3. Copy the generated `.trycloudflare.com` URL and use it in your Telegram Bot webhook/frontend config.
+
 ---
 
 ## 🤖 Note to VPS AI Agent:
