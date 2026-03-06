@@ -1,15 +1,38 @@
 {
-  "name": "mt5-telegram-login-mvp",
+  "name": "mt5-telegram-backend",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.1.0",
-  "description": "Telegram Mini App + MT5 login session launcher",
+  "description": "Production-grade backend: Telegram Mini App ↔ MT5 terminal session manager",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node backend/src/server.js"
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "migrate": "node scripts/migrate.js",
+    "smoke-test": "ts-node scripts/smoke-test.ts",
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "bullmq": "^5.7.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "helmet": "^8.1.0"
+    "express-validator": "^7.2.0",
+    "fs-extra": "^11.2.0",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.3.2",
+    "pg": "^8.11.5",
+    "prom-client": "^15.1.2",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.12.7",
+    "@types/pg": "^8.11.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
   }
 }

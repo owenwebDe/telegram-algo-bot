@@ -1,0 +1,54 @@
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import mt5Routes from './api/routes/mt5.routes';
+import healthRoutes from './api/routes/health.routes';
+import { errorHandler } from './api/middleware/error-handler';
+import { logger } from './config/logger';
+
+export function createApp(): express.Application {
+  const app = express();
+
+  // ── Security headers ────────────────────────────────────────────────────────
+  app.use(helmet());
+
+  // ── CORS ────────────────────────────────────────────────────────────────────
+  // Telegram Mini Apps are served from telegram.org domains
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow Telegram Mini App origins and same-origin calls
+        const allowed =
+          !origin ||
+          /^https:\/\/.*\.telegram\.org$/.test(origin) ||
+          /^https:\/\/web\.telegram\.org$/.test(origin);
+        callback(null, allowed);
+      },
+      methods: ['GET', 'POST', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
+    }),
+  );
+
+  // ── Body parsing ────────────────────────────────────────────────────────────
+  app.use(express.json({ limit: '16kb' }));
+
+  // ── Request logging ─────────────────────────────────────────────────────────
+  app.use((req, _res, next) => {
+    logger.info('Incoming request', { method: req.method, path: req.path, ip: req.ip });
+    next();
+  });
+
+  // ── Routes ───────────────────────────────────────────────────────────────────
+  app.use('/', healthRoutes);
+  app.use('/api/mt5', mt5Routes);
+
+  // ── 404 handler ─────────────────────────────────────────────────────────────
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'NotFound', message: 'Route not found' });
+  });
+
+  // ── Centralised error handler ────────────────────────────────────────────────
+  app.use(errorHandler);
+
+  return app;
+}

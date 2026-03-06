@@ -1,3 +1,5 @@
 node_modules/
+dist/
+logs/
 .env
-backend/data/sessions/
+*.log
