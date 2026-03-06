@@ -221,23 +221,25 @@
     }
 
     async function submitCredentials() {
-        const login = document.getElementById('login').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const server = document.getElementById('server').value.trim();
-
-        if (!login || !password || !server) {
-            setAlert('Please fill in all fields.', 'error');
-            return;
-        }
-
-        // We allow the POST even if initData is empty so that it logs to the VPS terminal!
-        const initDataString = (tg && tg.initData) ? tg.initData : '';
-
-        connectBtn.disabled = true;
-        setAlert('<div class="loader"></div> Queueing Launch...', 'launching');
-
         try {
-            const response = await fetch(`${API_BASE_URL}/api/mt5/connect`, {
+            const login = document.getElementById('login').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const server = document.getElementById('server').value.trim();
+
+            if (!login || !password || !server) {
+                alert("Please fill in all fields! (Login, Password, Server)");
+                setAlert('Please fill in all fields.', 'error');
+                return;
+            }
+
+            // We allow the POST even if initData is empty so that it logs to the VPS terminal!
+            const initDataString = (tg && tg.initData) ? tg.initData : '';
+
+            connectBtn.disabled = true;
+            setAlert('<div class="loader"></div> Queueing Launch...', 'launching');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/mt5/connect`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -264,11 +266,15 @@
             startPollingStatus(login);
 
         } catch (error) {
-            console.error('Submit Error:', error);
+            console.error('Fetch Error:', error);
+            alert("Network Error: " + error.message);
             setAlert(error.message || 'An unexpected error occurred.', 'error');
             connectBtn.disabled = false;
         }
+    } catch (e) {
+        alert("CRITICAL SCRIPT ERROR: " + e.message);
     }
+}
 
     function startPollingStatus(accountId) {
         if (pollInterval) clearInterval(pollInterval);
