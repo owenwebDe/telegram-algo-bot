@@ -17,14 +17,7 @@ export function createApp(): express.Application {
   // Telegram Mini Apps are served from telegram.org domains
   app.use(
     cors({
-      origin: (origin, callback) => {
-        // Allow Telegram Mini App origins and same-origin calls
-        const allowed =
-          !origin ||
-          /^https:\/\/.*\.telegram\.org$/.test(origin) ||
-          /^https:\/\/web\.telegram\.org$/.test(origin);
-        callback(null, allowed);
-      },
+      origin: '*', // We rely on cryptographic x-telegram-init-data, not cookies. Allow all WebView origins.
       methods: ['GET', 'POST', 'DELETE'],
       allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
     }),

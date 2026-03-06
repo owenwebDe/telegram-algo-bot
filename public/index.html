@@ -248,10 +248,15 @@
                 body: JSON.stringify({ login, password, server })
             });
 
-            const data = await response.json();
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error(`Server returned non-JSON response (Status: ${response.status})`);
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || 'Connection failed.');
+                throw new Error(data?.message || `Connection failed: ${response.statusText}`);
             }
 
             // Successfully queued / launching
@@ -261,7 +266,8 @@
             startPollingStatus(login);
 
         } catch (error) {
-            setAlert(error.message, 'error');
+            console.error('Submit Error:', error);
+            setAlert(error.message || 'An unexpected error occurred.', 'error');
             connectBtn.disabled = false;
         }
     }
