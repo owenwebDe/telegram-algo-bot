@@ -200,10 +200,12 @@
 </div>
 
 <script>
-    // Initialize Telegram WebApp
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Opens it to full height
-    tg.ready();
+    // Initialize Telegram WebApp carefully in case it's missing
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+        tg.expand(); // Opens it to full height
+        tg.ready();
+    }
 
     // The backend API URL will logically be the same host serving this HTML
     const API_BASE_URL = window.location.origin;
@@ -230,8 +232,7 @@
 
         // Must run inside Telegram to have initData
         if (!tg || !tg.initData) {
-            alert('❌ environment error: please open this via the Telegram Bot Menu button, not a standard browser link!');
-            setAlert('Error: Telegram Mini App environment not detected.', 'error');
+            setAlert('❌ Environment error: Please use the Bot Menu Button inside Telegram. Standard browser links will not work for security reasons.', 'error');
             return;
         }
 
