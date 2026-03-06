@@ -230,11 +230,8 @@
             return;
         }
 
-        // Must run inside Telegram to have initData
-        if (!tg || !tg.initData) {
-            setAlert('❌ Environment error: Please use the Bot Menu Button inside Telegram. Standard browser links will not work for security reasons.', 'error');
-            return;
-        }
+        // We allow the POST even if initData is empty so that it logs to the VPS terminal!
+        const initDataString = (tg && tg.initData) ? tg.initData : '';
 
         connectBtn.disabled = true;
         setAlert('<div class="loader"></div> Queueing Launch...', 'launching');
@@ -244,7 +241,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-telegram-init-data': tg.initData
+                    'x-telegram-init-data': initDataString
                 },
                 body: JSON.stringify({ login, password, server })
             });

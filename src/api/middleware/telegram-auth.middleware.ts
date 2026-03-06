@@ -99,8 +99,9 @@ export function telegramAuthMiddleware(
   next: NextFunction,
 ): void {
   const initData = req.headers['x-telegram-init-data'];
-  if (!initData || typeof initData !== 'string') {
-    res.status(401).json({ error: 'Unauthorized', message: 'Missing x-telegram-init-data header' });
+  if (!initData || typeof initData !== 'string' || initData.trim() === '') {
+    logger.warn('Frontend connection blocked: Missing Telegram initData. User likely opened the app in a standard browser instead of the Telegram Bot Menu.');
+    res.status(401).json({ error: 'Unauthorized', message: 'Missing Telegram environment. Please open within the Telegram App Bot Menu.' });
     return;
   }
 

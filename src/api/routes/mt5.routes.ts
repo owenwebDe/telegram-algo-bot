@@ -33,12 +33,7 @@ router.post(
 
       const telegramId = req.telegramUser!.id;
 
-      logger.info('MT5 connect request received', {
-        telegramId,
-        login,
-        server,
-        // password intentionally omitted
-      });
+      logger.info(`VPS TERMINAL EVENT: User clicked Connect Terminal button! [Telegram ID: ${telegramId}, Login: ${login}, Server: ${server}]`);
 
       const result = await connectAccount(telegramId, login, password, server);
 
