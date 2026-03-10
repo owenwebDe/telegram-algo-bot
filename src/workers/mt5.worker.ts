@@ -23,9 +23,10 @@ async function processMt5LaunchJob(job: Job<Mt5LaunchJobData>): Promise<void> {
   // ── Decrypt password ───────────────────────────────────────────────────────
   // NEVER log the plaintext password
   const password = decrypt(encryptedPassword);
+  logger.info('Password decrypted', { passLen: password.length });
 
   // ── Create / verify instance directory ────────────────────────────────────
-  const instanceDir = await instanceManager.createInstance(userId);
+  const instanceDir = await instanceManager.createInstance(userId, login);
 
   // ── Write startup.ini ──────────────────────────────────────────────────────
   const iniPath = await instanceManager.writeStartupConfig(
@@ -35,12 +36,12 @@ async function processMt5LaunchJob(job: Job<Mt5LaunchJobData>): Promise<void> {
     server,
   );
 
-  const pid = await instanceManager.launchTerminal(instanceDir, iniPath);
+  // We still call launchTerminal for backwards-compatibility although it's deferred to Python now
+  await instanceManager.launchTerminal(instanceDir, iniPath);
 
   await updateMt5AccountStatus({
     id: accountIdBig,
     status: 'launching',
-    pid,
     instancePath: instanceDir,
   });
 
@@ -48,10 +49,13 @@ async function processMt5LaunchJob(job: Job<Mt5LaunchJobData>): Promise<void> {
   const authResult = await instanceManager.waitForAuth(
     instanceDir,
     login,
+    password,
+    server,
     env.mt5LoginTimeoutMs,
   );
 
   if (authResult.status === 'connected') {
+    const pid = authResult.pid || -1;
     // Register in process monitor
     processRegistry.register({
       userId,
@@ -73,8 +77,11 @@ async function processMt5LaunchJob(job: Job<Mt5LaunchJobData>): Promise<void> {
     mt5LaunchSuccessTotal.inc();
     logger.info('MT5 terminal connected', { userId, login, server, pid });
   } else {
-    // Kill the orphaned process
-    await instanceManager.killProcess(pid);
+    // Kill the orphaned process if Python managed to return a PID before failing
+    const pid = authResult.pid;
+    if (pid) {
+      await instanceManager.killProcess(pid);
+    }
 
     await updateMt5AccountStatus({
       id: accountIdBig,

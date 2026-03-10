@@ -23,6 +23,7 @@ export const env = {
   redisUrl: required('REDIS_URL'),
 
   telegramBotToken: required('TELEGRAM_BOT_TOKEN'),
+  webappUrl: optional('WEBAPP_URL', 'https://localhost:8080'),
 
   // 32-byte hex string → 64-character hex
   encryptionKey: required('MT5_SECRET_KEY'),
@@ -36,6 +37,8 @@ export const env = {
 
   logLevel: optional('LOG_LEVEL', 'info'),
   logDir: optional('LOG_DIR', 'logs'),
+
+  allowAuthBypass: optional('ALLOW_AUTH_BYPASS', 'false') === 'true',
 } as const;
 
 export type Env = typeof env;

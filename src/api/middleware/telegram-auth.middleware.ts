@@ -99,8 +99,23 @@ export function telegramAuthMiddleware(
   next: NextFunction,
 ): void {
   const initData = req.headers['x-telegram-init-data'];
+
+  // ── Dev-mode bypass ───────────────────────────────────────────────────────
+  // When running outside of production AND no initData is provided,
+  // assign a dev user so the full flow can be tested from any browser.
   if (!initData || typeof initData !== 'string' || initData.trim() === '') {
-    logger.warn('Frontend connection blocked: Missing Telegram initData. User likely opened the app in a standard browser instead of the Telegram Bot Menu.');
+    if (env.allowAuthBypass) {
+      logger.warn('DEV MODE: Telegram auth bypassed — assigning dev user (id: 1)');
+      req.telegramUser = {
+        id: 1,
+        first_name: 'DevUser',
+        username: 'dev_tester',
+      };
+      next();
+      return;
+    }
+
+    logger.warn('Frontend connection blocked: Missing Telegram initData.');
     res.status(401).json({ error: 'Unauthorized', message: 'Missing Telegram environment. Please open within the Telegram App Bot Menu.' });
     return;
   }

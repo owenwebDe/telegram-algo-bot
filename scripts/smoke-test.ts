@@ -36,16 +36,16 @@ async function run(): Promise<void> {
   console.log(`\nSmoke test against: ${BASE_URL}\n`);
 
   // ── 1. Health check ─────────────────────────────────────────────────────────
-  await test('GET /health returns 200 with status:ok', async () => {
-    const res = await fetch(`${BASE_URL}/health`);
+  await test('GET /api/health returns 200 with status:ok', async () => {
+    const res = await fetch(`${BASE_URL}/api/health`);
     assert(res.status === 200, `Expected 200, got ${res.status}`);
     const body = (await res.json()) as { status: string };
     assert(body.status === 'ok', `Expected status:ok, got ${body.status}`);
   });
 
   // ── 2. Prometheus metrics ───────────────────────────────────────────────────
-  await test('GET /metrics returns Prometheus text', async () => {
-    const res = await fetch(`${BASE_URL}/metrics`);
+  await test('GET /api/metrics returns Prometheus text', async () => {
+    const res = await fetch(`${BASE_URL}/api/metrics`);
     assert(res.status === 200, `Expected 200, got ${res.status}`);
     const text = await res.text();
     assert(text.includes('# HELP'), 'Response missing Prometheus HELP comment');

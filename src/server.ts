@@ -19,6 +19,7 @@ import { createMt5Worker } from './workers/mt5.worker';
 import { mt5LaunchQueue, redisConnection } from './queue/queues';
 import { processRegistry, InstanceRecord } from './utils/process-monitor';
 import { getMt5AccountById } from './database/queries';
+import { startBot, stopBot } from './services/telegram-bot';
 import http from 'http';
 
 let worker: ReturnType<typeof createMt5Worker> | null = null;
@@ -77,10 +78,13 @@ async function bootstrap(): Promise<void> {
 
   httpServer.listen(env.port, env.host, () => {
     logger.info(`HTTP server listening on http://${env.host}:${env.port}`);
-    logger.info('Health check: GET /health');
-    logger.info('Metrics:      GET /metrics');
+    logger.info('Health check: GET /api/health');
+    logger.info('Metrics:      GET /api/metrics');
     logger.info('MT5 connect:  POST /api/mt5/connect');
   });
+
+  // ── 6. Telegram Bot ──────────────────────────────────────────────────────────
+  startBot();
 }
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -89,6 +93,7 @@ async function shutdown(signal: string): Promise<void> {
   logger.info(`${signal} received — shutting down gracefully`);
 
   processRegistry.stop();
+  stopBot();
 
   if (httpServer) {
     httpServer.close(() => logger.info('HTTP server closed'));

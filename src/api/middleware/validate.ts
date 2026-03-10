@@ -37,9 +37,11 @@ export const validateMt5Connect = [
   (req: Request, res: Response, next: NextFunction): void => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
       res.status(422).json({
         error: 'ValidationError',
-        messages: errors.array().map((e) => ({ field: e.type, message: e.msg })),
+        message: firstError.msg, // Send the specific validation message
+        details: errors.array().map((e) => ({ field: (e as any).path || (e as any).param, message: e.msg })),
       });
       return;
     }

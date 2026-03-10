@@ -11,7 +11,20 @@ export function createApp(): express.Application {
   const app = express();
 
   // ── Security headers ────────────────────────────────────────────────────────
-  app.use(helmet());
+  // Helmet CSP must allow the Telegram WebApp SDK and our inline scripts.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https://telegram.org"],
+          connectSrc: ["'self'", "https://*.trycloudflare.com"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
+      },
+    }),
+  );
 
   // ── CORS ────────────────────────────────────────────────────────────────────
   // Telegram Mini Apps are served from telegram.org domains
@@ -35,7 +48,7 @@ export function createApp(): express.Application {
   // ── Routes ───────────────────────────────────────────────────────────────────
   // Serve Telegram Mini App static frontend
   app.use(express.static(path.join(process.cwd(), 'public')));
-  
+
   app.use('/api', healthRoutes); // Move health to /api to prevent conflicts
   app.use('/api/mt5', mt5Routes);
 

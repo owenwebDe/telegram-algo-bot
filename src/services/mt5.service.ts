@@ -109,7 +109,7 @@ export async function disconnectAccount(
   }
 
   // Remove from registry
-  processRegistry.unregister(user.id.toString());
+  processRegistry.unregister(user.id.toString(), login);
 
   await updateMt5AccountStatus({ id: account.id, status: 'disconnected', pid: null });
 
@@ -121,4 +121,21 @@ export async function disconnectAccount(
   });
 
   return { ok: true, message: 'Account disconnected' };
+}
+
+/**
+ * Fetch real-time account data (balance, prices, positions).
+ */
+export async function getAccountData(
+  telegramId: number,
+  login: string,
+): Promise<any> {
+  const user = await upsertUserByTelegramId(telegramId);
+  const account = await getMt5AccountByLogin(user.id, login);
+
+  if (!account || account.status !== 'connected') {
+    return { status: 'failed', message: 'Account not connected' };
+  }
+
+  return await instanceManager.getAccountData(user.id.toString(), login);
 }

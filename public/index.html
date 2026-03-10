@@ -1,318 +1,874 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Connect MT5 Account</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Equivault FX — Terminal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #1c1c1e);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #ebebf599);
-            --link-color: var(--tg-theme-link-color, #0a84ff);
-            --button-color: var(--tg-theme-button-color, #0a84ff);
-            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --secondary-bg-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            --bg: #0b0b0f;
+            --surface: #12121a;
+            --surface-hover: #1a1a24;
+            --card: #161620;
+            --accent: #00d4aa;
+            --accent-glow: rgba(0, 212, 170, 0.15);
+            --text: #ffffff;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --danger: #ff4757;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            overscroll-behavior-y: none;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #0a84ff, #5ac8fa);
-            display: inline-flex;
+        /* ── Login View ── */
+        #loginView {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
-            color: white;
-            box-shadow: 0 8px 16px rgba(10, 132, 255, 0.3);
+            overflow-y: auto;
         }
 
-        h1 {
+        .login-wrap {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
             font-size: 24px;
+            font-weight: 800;
             margin-bottom: 8px;
-            font-weight: 600;
         }
 
-        p.subtitle {
-            color: var(--hint-color);
-            font-size: 15px;
-            margin-bottom: 30px;
+        .header p {
+            font-size: 14px;
+            color: var(--text-dim);
         }
 
-        .input-group {
-            background-color: var(--secondary-bg-color);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .card {
+            background: var(--surface);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            padding: 8px;
+            margin-bottom: 20px;
         }
 
         .input-row {
-            padding: 0 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
             display: flex;
-            align-items: center;
+            flex-direction: column;
         }
-        
+
         .input-row:last-child {
             border-bottom: none;
         }
 
         .input-row label {
-            width: 80px;
-            text-align: left;
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        input {
-            flex: 1;
+        .input-row input {
             background: transparent;
             border: none;
-            color: var(--text-color);
+            color: var(--text);
             font-size: 16px;
-            padding: 16px 0;
+            padding: 4px 0;
             outline: none;
+        }
+
+        .btn-connect {
             width: 100%;
-        }
-
-        input::placeholder {
-            color: var(--hint-color);
-        }
-
-        .btn {
-            background-color: var(--button-color);
-            color: var(--button-text-color);
-            border: none;
-            border-radius: 12px;
             padding: 16px;
-            font-size: 17px;
-            font-weight: 600;
-            width: 100%;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s, background-color 0.2s;
+            transition: transform 0.2s, background 0.2s;
         }
 
-        .btn:active {
-            opacity: 0.8;
+        .btn-connect:active {
+            transform: scale(0.98);
         }
 
-        .btn:disabled {
-            background-color: var(--hint-color);
-            cursor: not-allowed;
+        .btn-connect:disabled {
+            background: var(--text-dim);
             opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .status {
-            margin-top: 20px;
+        /* ── Main App Shell ── */
+        #appShell {
+            flex: 1;
+            display: none;
+            /* Hidden until login */
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ── Top Navbar ── */
+        .navbar {
+            padding: calc(var(--safe-top) + 12px) 16px 12px;
+            background: rgba(11, 11, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .account-badge {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .account-badge .title {
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 700;
+        }
+
+        .account-badge .subtitle {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .status-dot.off {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        /* ── Content View ── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        .view {
+            display: none;
+            transition: opacity 0.3s;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Dashboard Stats ── */
+        .summary-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: var(--accent);
+            filter: blur(80px);
+            opacity: 0.1;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .summary-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.03);
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 12px;
+        }
+
+        .stat-item .label {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 2px;
+        }
+
+        .stat-item .val {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* ── Trade List ── */
+        .section-header {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header span {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .trade-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trade-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trade-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .trade-icon.buy {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--success);
+        }
+
+        .trade-icon.sell {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+        }
+
+        .trade-meta .symbol {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .trade-meta .type-vol {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .trade-profit {
+            text-align: right;
+        }
+
+        .trade-profit .profit-val {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .trade-profit .price {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* ── Price List ── */
+        .price-row {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-row:last-child {
+            border-bottom: none;
+        }
+
+        .price-name {
+            font-weight: 600;
+        }
+
+        .price-vals {
+            display: flex;
+            gap: 12px;
+        }
+
+        .price-chip {
+            background: var(--surface);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .price-chip.up {
+            color: var(--success);
+        }
+
+        .price-chip.down {
+            color: var(--danger);
+        }
+
+        /* ── Footer Nav ── */
+        .footer {
+            padding-bottom: calc(var(--safe-bottom) + 12px);
+            background: rgba(18, 18, 26, 0.95);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+        }
+
+        .tab-btn i {
+            font-size: 20px;
+        }
+
+        /* ── Drawer ── */
+        .drawer {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            transition: left 0.3s ease;
+        }
+
+        .drawer.active {
+            left: 0;
+        }
+
+        .drawer-content {
+            width: 280px;
+            height: 100%;
+            background: var(--surface);
+            padding: 40px 24px;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .drawer-header {
+            margin-bottom: 40px;
+        }
+
+        .drawer-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .drawer-item.danger {
+            color: var(--danger);
+        }
+
+        /* ── Utils ── */
+        .p-up {
+            color: var(--success);
+        }
+
+        .p-down {
+            color: var(--danger);
+        }
+
+        .hidden {
             display: none;
         }
 
-        .status.error {
-            display: block;
-            background-color: rgba(255, 59, 48, 0.1);
-            color: #ff3b30;
-        }
-        
-        .status.success {
-            display: block;
-            background-color: rgba(52, 199, 89, 0.1);
-            color: #34c759;
-        }
-        
-        .status.launching {
-            display: block;
-            background-color: rgba(10, 132, 255, 0.1);
-            color: #0a84ff;
-        }
-
-        .loader {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0, 212, 170, 0.2);
+            border-top-color: var(--accent);
             border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
-            vertical-align: middle;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-
     </style>
 </head>
+
 <body>
+    <!-- ── Login / Connect View ── -->
+    <div id="loginView">
+        <div class="login-wrap">
+            <div class="header">
+                <h1>Equivault FX</h1>
+                <p>Advanced Trading Terminal</p>
+            </div>
 
-<div class="container">
-    <div class="logo">E_FX</div>
-    <h1>Connect MT5</h1>
-    <p class="subtitle">Securely link your broker account.</p>
+            <div class="card">
+                <div class="input-row">
+                    <label>Login ID</label>
+                    <input type="text" id="login" placeholder="e.g. 727272" inputmode="numeric">
+                </div>
+                <div class="input-row">
+                    <label>Master Password</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                </div>
+                <div class="input-row">
+                    <label>Broker Server</label>
+                    <input type="text" id="server" value="CribMarket-Live">
+                </div>
+            </div>
 
-    <div class="input-group">
-        <div class="input-row">
-            <label for="login">Login</label>
-            <input type="number" id="login" placeholder="Account Number" inputmode="numeric">
-        </div>
-        <div class="input-row">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Master Password">
-        </div>
-        <div class="input-row">
-            <label for="server">Server</label>
-            <input type="text" id="server" value="CribMarket" readonly style="color: var(--hint-color); cursor: not-allowed;">
+            <p id="authMsg" style="text-align:center; font-size:12px; margin-bottom:12px; color:var(--text-dim)"></p>
+            <button id="connectBtn" class="btn-connect">Connect Terminal</button>
         </div>
     </div>
 
-    <div id="statusAlert" class="status"></div>
+    <!-- ── Main App Shell ── -->
+    <div id="appShell">
+        <!-- Top Nav -->
+        <nav class="navbar">
+            <div class="nav-left">
+                <div id="sidebarTrigger" class="sidebar-btn">☰</div>
+                <div class="account-badge">
+                    <span id="navAccount" class="title">Account #000000</span>
+                    <span class="subtitle">Equivault Live</span>
+                </div>
+            </div>
+            <div class="nav-right">
+                <div class="status-dot"></div>
+            </div>
+        </nav>
 
-    <button id="connectBtn" class="btn" onclick="submitCredentials()">Connect Terminal</button>
-</div>
+        <!-- Dynamic Content -->
+        <main class="content">
+            <!-- TRADE VIEW -->
+            <div id="tradeView" class="view active">
+                <div class="summary-card">
+                    <div class="summary-label">Total Balance</div>
+                    <div id="totalBalance" class="summary-value">$0.00</div>
 
-<script>
-    // Initialize Telegram WebApp carefully in case it's missing
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg) {
-        tg.expand(); // Opens it to full height
-        tg.ready();
-    }
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="label">Equity</div>
+                            <div id="totalEquity" class="val">$0.00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">P/L Today</div>
+                            <div id="totalProfit" class="val p-up">+$0.00</div>
+                        </div>
+                    </div>
+                </div>
 
-    // The backend API URL will logically be the same host serving this HTML
-    const API_BASE_URL = window.location.origin;
+                <div class="section-header">
+                    Active Trades
+                    <span id="tradeCount">0 Open</span>
+                </div>
+                <div id="positionsList">
+                    <!-- Positions will be injected here -->
+                    <p style="text-align: center; color: var(--text-dim); padding: 20px;">No open positions</p>
+                </div>
 
-    const connectBtn = document.getElementById('connectBtn');
-    const statusAlert = document.getElementById('statusAlert');
-    
-    let pollInterval = null;
+                <div class="section-header" style="margin-top: 32px;">Market Watch</div>
+                <div id="marketWatch" class="card" style="padding: 0 16px;">
+                    <!-- Prices will be injected here -->
+                </div>
+            </div>
 
-    function setAlert(message, type) {
-        statusAlert.className = `status ${type}`;
-        statusAlert.innerHTML = message;
-    }
+            <!-- EXPERT VIEW -->
+            <div id="expertView" class="view">
+                <div class="header" style="margin-top: 40px;">
+                    <h2>Expert Advisor</h2>
+                    <p>Automated signals & risk management</p>
+                </div>
+                <div class="card" style="padding: 24px; text-align: center;">
+                    <p style="color: var(--accent); font-weight: 700;">AI Monitoring Enabled</p>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-top: 8px;">The Equivault Expert is
+                        scanning XAUUSD for Level 1 breakouts.</p>
+                </div>
+            </div>
 
-    async function submitCredentials() {
+            <!-- HISTORY VIEW -->
+            <div id="historyView" class="view">
+                <div class="section-header">Trade History</div>
+                <div id="historyList">
+                    <p style="text-align: center; color: var(--text-dim); padding: 40px;">History will appear here after
+                        trades are closed.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Navigation -->
+        <footer class="footer">
+            <div class="tab-btn active" data-view="tradeView">
+                <i>📊</i>
+                <span>TRADE</span>
+            </div>
+            <div class="tab-btn" data-view="expertView">
+                <i>🤖</i>
+                <span>EXPERT</span>
+            </div>
+            <div class="tab-btn" data-view="historyView">
+                <i>⏱</i>
+                <span>HISTORY</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Sidebar Drawer -->
+    <div id="drawer" class="drawer">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3>Equivault FX</h3>
+                <p style="font-size: 12px; color: var(--text-dim)">v1.0.4-premium</p>
+            </div>
+            <div class="drawer-item">Settings</div>
+            <div class="drawer-item">Support</div>
+            <div class="drawer-item danger" id="logoutBtn">Disconnect Account</div>
+        </div>
+    </div>
+
+    <script>
+        /* ===================================================================
+           EQUIVAULT FX — PREMIUM TERMINAL LOGIC
+           Pure ES5 for maximum compatibility.
+        =================================================================== */
+
+        var API = window.location.origin || (window.location.protocol + "//" + window.location.host);
+        var tg = null;
+        var pollTimer = null;
+        var dataTimer = null;
+        var currentLogin = null;
+
+        /* ── Initialization ────────────────────────────────────────────── */
         try {
-            const login = document.getElementById('login').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const server = document.getElementById('server').value.trim();
-
-            if (!login || !password || !server) {
-                alert("Please fill in all fields! (Login, Password, Server)");
-                setAlert('Please fill in all fields.', 'error');
-                return;
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                tg.expand();
+                tg.ready();
+                if (tg.headerColor) tg.setHeaderColor('#0b0b0f');
             }
+        } catch (e) { console.error(e); }
 
-            // We allow the POST even if initData is empty so that it logs to the VPS terminal!
-            const initDataString = (tg && tg.initData) ? tg.initData : '';
-
-            connectBtn.disabled = true;
-            setAlert('<div class="loader"></div> Queueing Launch...', 'launching');
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/mt5/connect`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-telegram-init-data': initDataString
-                },
-                body: JSON.stringify({ login, password, server })
-            });
-
-            let data = null;
-            try {
-                data = await response.json();
-            } catch (e) {
-                throw new Error(`Server returned non-JSON response (Status: ${response.status})`);
-            }
-
-            if (!response.ok) {
-                throw new Error(data?.message || `Connection failed: ${response.statusText}`);
-            }
-
-            // Successfully queued / launching
-            setAlert('<div class="loader"></div> Booting Terminal (Wait 15s)...', 'launching');
-            
-            // Start polling the status
-            startPollingStatus(login);
-
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            alert("Network Error: " + error.message);
-            setAlert(error.message || 'An unexpected error occurred.', 'error');
-            connectBtn.disabled = false;
+        // Check for existing session
+        var savedLogin = localStorage.getItem('equivault_login');
+        if (savedLogin) {
+            currentLogin = savedLogin;
+            enterAppShell(savedLogin);
         }
-    } catch (e) {
-        alert("CRITICAL SCRIPT ERROR: " + e.message);
-    }
-}
 
-    function startPollingStatus(accountId) {
-        if (pollInterval) clearInterval(pollInterval);
+        /* ── Navigation ────────────────────────────────────────────────── */
+        var tabs = document.querySelectorAll('.tab-btn');
+        var views = document.querySelectorAll('.view');
 
-        pollInterval = setInterval(async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/mt5/status/${accountId}`, {
-                    headers: { 'x-telegram-init-data': tg.initData }
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].addEventListener('click', function (e) {
+                var target = this.getAttribute('data-view');
+
+                // Update UI state
+                for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+                for (var k = 0; k < views.length; k++) views[k].classList.remove('active');
+
+                this.classList.add('active');
+                document.getElementById(target).classList.add('active');
+
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            });
+        }
+
+        // Sidebar
+        var drawer = document.getElementById('drawer');
+        document.getElementById('sidebarTrigger').addEventListener('click', function () { drawer.classList.add('active'); });
+        drawer.addEventListener('click', function (e) { if (e.target === drawer) drawer.classList.remove('active'); });
+
+        /* ── Authentication ────────────────────────────────────────────── */
+        document.getElementById('connectBtn').addEventListener('click', function () {
+            var loginVal = document.getElementById('login').value.trim();
+            var passVal = document.getElementById('password').value.trim();
+            var serverVal = document.getElementById('server').value.trim();
+
+            if (!loginVal || !passVal) return alert('Please enter credentials');
+
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner" style="display:inline-block"></span> Connecting...';
+            document.getElementById('authMsg').textContent = 'Launching terminal instance...';
+
+            var payload = { login: loginVal, password: passVal, server: serverVal };
+            var initData = tg ? tg.initData : '';
+
+            fetch(API + '/api/mt5/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                body: JSON.stringify(payload)
+            }).then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status === 'failed') throw new Error(data.message);
+                    currentLogin = loginVal;
+                    startLoginPolling(loginVal);
+                })
+                .catch(function (err) {
+                    alert(err.message);
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('connectBtn').textContent = 'Connect Terminal';
+                    document.getElementById('authMsg').textContent = '';
                 });
-                
-                if (!res.ok) return; // Keep polling
-                
-                const data = await res.json();
-                
-                if (data.status === 'connected') {
-                    clearInterval(pollInterval);
-                    setAlert('✅ Account Connected Successfully!', 'success');
-                    connectBtn.style.display = 'none';
-                    
-                    // Trigger Telegram haptic feedback and notify bot
-                    tg.HapticFeedback.notificationOccurred('success');
-                    
-                    setTimeout(() => {
-                        tg.close(); // Close the mini app when done
-                    }, 3000);
-                } else if (data.status === 'failed') {
-                    clearInterval(pollInterval);
-                    setAlert('❌ Failed to connect. Invalid credentials or server.', 'error');
-                    connectBtn.disabled = false;
-                    tg.HapticFeedback.notificationOccurred('error');
-                }
-                
-            } catch (e) {
-                console.error('Polling error', e);
-            }
-        }, 5000); // Check every 5 seconds
-    }
-</script>
+        });
 
+        function startLoginPolling(login) {
+            pollTimer = setInterval(function () {
+                var initData = tg ? tg.initData : '';
+                fetch(API + '/api/mt5/status/' + login, {
+                    headers: { 'x-telegram-init-data': initData }
+                }).then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.status === 'connected') {
+                            clearInterval(pollTimer);
+                            enterAppShell(login);
+                        } else if (data.status === 'failed') {
+                            clearInterval(pollTimer);
+                            alert('Login failed. Please check credentials.');
+                            document.getElementById('connectBtn').disabled = false;
+                            document.getElementById('connectBtn').textContent = 'Connect Terminal';
+                        }
+                    });
+            }, 3000);
+        }
+
+        function enterAppShell(login) {
+            localStorage.setItem('equivault_login', login);
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('appShell').style.display = 'flex';
+            document.getElementById('navAccount').textContent = 'Account #' + login;
+
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+            // Start data polling
+            startDataPolling(login);
+        }
+
+        /* ── Data Fetching ─────────────────────────────────────────────── */
+        function startDataPolling(login) {
+            // Clear existing if any
+            if (dataTimer) clearInterval(dataTimer);
+            fetchData(login);
+            dataTimer = setInterval(function () { fetchData(login); }, 3000);
+        }
+
+        function fetchData(login) {
+            var initData = tg ? tg.initData : '';
+            var dot = document.querySelector('.status-dot');
+            fetch(API + '/api/mt5/data/' + login, {
+                headers: { 'x-telegram-init-data': initData }
+            }).then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status === 'success') {
+                        dot.classList.remove('off');
+                        updateDashboard(data);
+                    } else {
+                        dot.classList.add('off');
+                        // If the account is disconnected on backend, we stay in shell
+                        // but indicate it's offline.
+                    }
+                })
+                .catch(function (err) {
+                    dot.classList.add('off');
+                });
+        }
+
+        function updateDashboard(data) {
+            // Stats
+            document.getElementById('totalBalance').textContent = '$' + data.account.balance.toLocaleString(undefined, { minimumFractionDigits: 2 });
+            document.getElementById('totalEquity').textContent = '$' + data.account.equity.toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+            var pVal = data.account.profit;
+            var profDiv = document.getElementById('totalProfit');
+            profDiv.textContent = (pVal >= 0 ? '+' : '') + '$' + pVal.toFixed(2);
+            profDiv.className = 'val ' + (pVal >= 0 ? 'p-up' : 'p-down');
+
+            // Positions
+            var list = document.getElementById('positionsList');
+            document.getElementById('tradeCount').textContent = data.positions.length + ' Open';
+
+            if (data.positions.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 20px;">No open positions</p>';
+            } else {
+                var html = '';
+                for (var i = 0; i < data.positions.length; i++) {
+                    var p = data.positions[i];
+                    var isBuy = p.type === 'BUY';
+                    html += '<div class="trade-card">' +
+                        '<div class="trade-info">' +
+                        '<div class="trade-icon ' + (isBuy ? 'buy' : 'sell') + '">' + (isBuy ? 'BUY' : 'SELL') + '</div>' +
+                        '<div class="trade-meta">' +
+                        '<div class="symbol">' + p.symbol + '</div>' +
+                        '<div class="type-vol">' + p.volume + ' Lots</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="trade-profit">' +
+                        '<div class="profit-val ' + (p.profit >= 0 ? 'p-up' : 'p-down') + '">' + (p.profit >= 0 ? '+' : '') + p.profit.toFixed(2) + '</div>' +
+                        '<div class="price">' + p.price_open.toFixed(5) + ' → ' + p.price_current.toFixed(5) + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }
+                list.innerHTML = html;
+            }
+
+            // Market Watch
+            var watch = document.getElementById('marketWatch');
+            var watchHtml = '';
+            var syms = Object.keys(data.prices);
+            for (var s = 0; s < syms.length; s++) {
+                var symbol = syms[s];
+                var tick = data.prices[symbol];
+                watchHtml += '<div class="price-row">' +
+                    '<div class="price-name">' + symbol + '</div>' +
+                    '<div class="price-vals">' +
+                    '<div class="price-chip">' + tick.bid.toFixed(5) + '</div>' +
+                    '<div class="price-chip">' + tick.ask.toFixed(5) + '</div>' +
+                    '</div>' +
+                    '</div>';
+            }
+            watch.innerHTML = watchHtml;
+        }
+
+        /* ── Logout ────────────────────────────────────────────────────── */
+        document.getElementById('logoutBtn').addEventListener('click', function () {
+            if (!confirm('Are you sure you want to disconnect?')) return;
+
+            localStorage.removeItem('equivault_login');
+            var initData = tg ? tg.initData : '';
+            var serverVal = document.getElementById('server').value;
+
+            fetch(API + '/api/mt5/disconnect/' + currentLogin + '?server=' + serverVal, {
+                method: 'DELETE',
+                headers: { 'x-telegram-init-data': initData }
+            }).then(function () {
+                window.location.reload();
+            });
+        });
+
+    </script>
 </body>
+
 </html>

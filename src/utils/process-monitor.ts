@@ -36,24 +36,26 @@ class ProcessRegistry extends EventEmitter {
   }
 
   register(record: InstanceRecord): void {
-    this.records.set(record.userId, record);
+    const key = `${record.userId}_${record.login}`;
+    this.records.set(key, record);
     mt5ActiveInstances.set(this.records.size);
     logger.info('Instance registered', {
       userId: record.userId,
       login: record.login,
-      server: record.server,
+      key,
       pid: record.pid,
     });
   }
 
-  unregister(userId: string): void {
-    this.records.delete(userId);
+  unregister(userId: string, login: string): void {
+    const key = `${userId}_${login}`;
+    this.records.delete(key);
     mt5ActiveInstances.set(this.records.size);
-    logger.info('Instance unregistered', { userId });
+    logger.info('Instance unregistered', { userId, login, key });
   }
 
-  get(userId: string): InstanceRecord | undefined {
-    return this.records.get(userId);
+  get(userId: string, login: string): InstanceRecord | undefined {
+    return this.records.get(`${userId}_${login}`);
   }
 
   all(): InstanceRecord[] {
@@ -66,16 +68,16 @@ class ProcessRegistry extends EventEmitter {
 
   /** Check all registered PIDs; emit 'crashed' for any that have exited. */
   private poll(): void {
-    for (const [userId, record] of this.records) {
+    for (const [key, record] of this.records) {
       if (!this.isAlive(record.pid)) {
         logger.warn('MT5 instance crashed', {
-          userId,
+          userId: record.userId,
           login: record.login,
-          server: record.server,
+          key,
           pid: record.pid,
         });
         record.status = 'crashed';
-        this.records.delete(userId);
+        this.records.delete(key);
         mt5ActiveInstances.set(this.records.size);
         this.emit('crashed', record);
       }
