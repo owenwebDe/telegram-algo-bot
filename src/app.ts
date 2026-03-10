@@ -2,6 +2,8 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import mt5Routes from './api/routes/mt5.routes';
+import eaRoutes from './api/routes/ea.routes';
+import subscriptionRoutes from './api/routes/subscription.routes';
 import healthRoutes from './api/routes/health.routes';
 import { errorHandler } from './api/middleware/error-handler';
 import { logger } from './config/logger';
@@ -31,8 +33,8 @@ export function createApp(): express.Application {
   app.use(
     cors({
       origin: '*', // We rely on cryptographic x-telegram-init-data, not cookies. Allow all WebView origins.
-      methods: ['GET', 'POST', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
+      methods: ['GET', 'POST', 'DELETE', 'PUT'],
+      allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-admin-secret'],
     }),
   );
 
@@ -49,8 +51,11 @@ export function createApp(): express.Application {
   // Serve Telegram Mini App static frontend
   app.use(express.static(path.join(process.cwd(), 'public')));
 
-  app.use('/api', healthRoutes); // Move health to /api to prevent conflicts
+  app.use('/api', healthRoutes);
   app.use('/api/mt5', mt5Routes);
+  app.use('/api/ea', eaRoutes);
+  app.use('/api/subscription', subscriptionRoutes);
+  app.use('/api/admin', subscriptionRoutes); // generate-code lives on /api/admin/generate-code
 
   // ── 404 handler ─────────────────────────────────────────────────────────────
   app.use((_req, res) => {

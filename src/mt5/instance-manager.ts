@@ -3,6 +3,7 @@ import fse from 'fs-extra';
 import { spawn, exec } from 'child_process';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
+import { eaRegistry } from '../utils/ea-process-registry';
 import util from 'util';
 
 const execPromise = util.promisify(exec);
@@ -245,6 +246,81 @@ export class InstanceManager {
       logger.error('Failed to fetch MT5 data', { error: err.message, login, userId });
       return { status: 'failed', message: err.message };
     }
+  }
+
+  // ── EA Engine ─────────────────────────────────────────────────────────────
+
+  /**
+   * Starts the ea_engine.py process for a user's account.
+   * The process streams heartbeat JSON to stdout.
+   */
+  startEaEngine(userId: string, login: string, config: object): void {
+    this.stopEaEngine(userId, login);
+
+    const instanceDir = this.getInstanceDir(userId, login);
+    const exePath = path.join(instanceDir, env.mt5TerminalExe);
+    const scriptPath = path.join(__dirname, '..', 'utils', 'ea_engine.py');
+    const configJson = JSON.stringify(config);
+
+    logger.info('Starting EA engine', { userId, login });
+
+    const child = spawn('python', [
+      scriptPath,
+      '--path', exePath,
+      '--login', login,
+      '--config', configJson,
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    eaRegistry.register({
+      userId,
+      login,
+      pid: child.pid!,
+      startedAt: new Date(),
+      status: 'running',
+    });
+
+    child.stdout!.on('data', (data: Buffer) => {
+      const lines = data.toString().trim().split('\n');
+      for (const line of lines) {
+        try {
+          const msg = JSON.parse(line);
+          if (msg.type === 'heartbeat') {
+            eaRegistry.updateHeartbeat(userId, login, {
+              spreadBuy: msg.spread_buy,
+              spreadSell: msg.spread_sell,
+              activeLevels: msg.active_levels,
+              openPairs: msg.open_pairs,
+              eaProfit: msg.ea_profit,
+            });
+          } else if (msg.type === 'fatal' || msg.type === 'stopped') {
+            logger.warn('EA engine message', { userId, login, msg });
+            eaRegistry.unregister(userId, login);
+          }
+        } catch { /* non-JSON output, ignore */ }
+      }
+    });
+
+    child.stderr!.on('data', (data: Buffer) => {
+      logger.warn('EA engine stderr', { userId, login, stderr: data.toString().trim() });
+    });
+
+    child.on('exit', (code) => {
+      logger.info('EA engine exited', { userId, login, code });
+      eaRegistry.unregister(userId, login);
+    });
+  }
+
+  /**
+   * Sends SIGTERM to the ea_engine.py process to stop it cleanly.
+   */
+  stopEaEngine(userId: string, login: string): void {
+    const rec = eaRegistry.get(userId, login);
+    if (!rec) return;
+    try {
+      process.kill(rec.pid, 'SIGTERM');
+      logger.info('EA engine stop signal sent', { userId, login, pid: rec.pid });
+    } catch { /* process may already be dead */ }
+    eaRegistry.unregister(userId, login);
   }
 }
 

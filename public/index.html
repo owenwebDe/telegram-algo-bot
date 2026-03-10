@@ -508,10 +508,328 @@
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        /* ── Expert Page ── */
+        .ea-status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .ea-status-chip.running {
+            background: rgba(46, 213, 115, 0.15);
+            color: var(--success);
+        }
+
+        .ea-status-chip.stopped {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+        }
+
+        .ea-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ea-stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .ea-stat-card .label {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .ea-stat-card .val {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .ea-action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-ea-start {
+            flex: 1;
+            padding: 14px;
+            background: var(--success);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .btn-ea-stop {
+            flex: 1;
+            padding: 14px;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .settings-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .settings-section h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-row:last-child {
+            border-bottom: none;
+        }
+
+        .form-row label {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .form-row input,
+        .form-row select {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            max-width: 130px;
+            text-align: right;
+        }
+
+        .form-row select {
+            max-width: 140px;
+        }
+
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--surface-hover);
+            border-radius: 22px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked+.toggle-slider {
+            background: var(--accent);
+        }
+
+        .toggle input:checked+.toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        /* Level rows */
+        .level-row {
+            display: grid;
+            grid-template-columns: auto 1fr 1fr 1fr auto;
+            gap: 6px;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .level-row:last-child {
+            border-bottom: none;
+        }
+
+        .level-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .level-row input {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 12px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn-add-level {
+            padding: 10px;
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn-del-level {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .btn-save-config {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .locked-banner {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .lock-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Subscription sidebar section */
+        .sub-tier-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent);
+            margin-left: 8px;
+        }
+
+        .sub-tier-badge.free {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-dim);
+        }
+
+        .activation-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+
+        .activation-row input {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-family: monospace;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .btn-activate {
+            padding: 10px 16px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* History rows */
+        .history-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-row:last-child {
+            border-bottom: none;
+        }
+
+        .history-meta .symbol {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .history-meta .sub {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .history-profit {
+            font-size: 15px;
+            font-weight: 800;
         }
     </style>
 </head>
@@ -598,23 +916,146 @@
 
             <!-- EXPERT VIEW -->
             <div id="expertView" class="view">
-                <div class="header" style="margin-top: 40px;">
-                    <h2>Expert Advisor</h2>
-                    <p>Automated signals & risk management</p>
+                <!-- Locked / Upgrading state -->
+                <div id="expertLock" class="locked-banner hidden">
+                    <div class="lock-icon">🔒</div>
+                    <h3 style="margin-bottom:8px">Premium Feature</h3>
+                    <p style="color:var(--text-dim);font-size:14px;margin-bottom:20px">
+                        Activate a subscription to access the Expert Advisor and start automated trading.
+                    </p>
+                    <button onclick="document.getElementById('drawer').classList.add('active')"
+                        style="padding:14px 28px;background:var(--accent);color:#000;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">
+                        Activate Now
+                    </button>
                 </div>
-                <div class="card" style="padding: 24px; text-align: center;">
-                    <p style="color: var(--accent); font-weight: 700;">AI Monitoring Enabled</p>
-                    <p style="font-size: 13px; color: var(--text-dim); margin-top: 8px;">The Equivault Expert is
-                        scanning XAUUSD for Level 1 breakouts.</p>
+
+                <!-- EA Control Panel -->
+                <div id="expertPanel">
+                    <!-- Status + Action -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <h3 style="font-size:17px;font-weight:800">Expert Advisor</h3>
+                        <span id="eaStatusChip" class="ea-status-chip stopped">⏹ Stopped</span>
+                    </div>
+
+                    <!-- Live Stats -->
+                    <div class="ea-stat-grid">
+                        <div class="ea-stat-card">
+                            <div class="label">Spread (Buy)</div>
+                            <div id="eaSpreadBuy" class="val">—</div>
+                        </div>
+                        <div class="ea-stat-card">
+                            <div class="label">Open Pairs</div>
+                            <div id="eaOpenPairs" class="val">0</div>
+                        </div>
+                        <div class="ea-stat-card">
+                            <div class="label">Active Levels</div>
+                            <div id="eaActiveLevels" class="val">0</div>
+                        </div>
+                        <div class="ea-stat-card">
+                            <div class="label">EA Profit</div>
+                            <div id="eaProfit" class="val p-up">$0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Start/Stop -->
+                    <div class="ea-action-row">
+                        <button class="btn-ea-start" onclick="eaStart()">▶ Start EA</button>
+                        <button class="btn-ea-stop" onclick="eaStop()">⏹ Stop EA</button>
+                    </div>
+
+                    <!-- General Settings -->
+                    <div class="settings-section">
+                        <h4>General Settings</h4>
+                        <div class="form-row">
+                            <label>Trade Direction</label>
+                            <select id="cfg_tradeType">
+                                <option value="buy">Buy Only</option>
+                                <option value="sell">Sell Only</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Symbol 1</label>
+                            <input type="text" id="cfg_symbol1" value="XAUUSD" />
+                        </div>
+                        <div class="form-row">
+                            <label>Symbol 2</label>
+                            <input type="text" id="cfg_symbol2" value="XAUUSD." />
+                        </div>
+                        <div class="form-row">
+                            <label>Lot Size</label>
+                            <input type="number" id="cfg_initialLot" value="0.1" step="0.01" min="0.01" />
+                        </div>
+                        <div class="form-row">
+                            <label>Magic Number</label>
+                            <input type="number" id="cfg_magicNo" value="12345" />
+                        </div>
+                        <div class="form-row">
+                            <label>Stop Loss (pips)</label>
+                            <input type="number" id="cfg_stopLoss" value="0" min="0" />
+                        </div>
+                        <div class="form-row">
+                            <label>Take Profit (pips)</label>
+                            <input type="number" id="cfg_takeProfit" value="0" min="0" />
+                        </div>
+                        <div class="form-row">
+                            <label>Open Sym First</label>
+                            <select id="cfg_symbolToTrade">
+                                <option value="Sym1">Symbol 1</option>
+                                <option value="Sym2">Symbol 2</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Close Sym First</label>
+                            <select id="cfg_symbolToClose">
+                                <option value="Sym1">Symbol 1</option>
+                                <option value="Sym2">Symbol 2</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Trade Same Level</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="cfg_tradeOnSameLevel" />
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Level Manager -->
+                    <div class="settings-section">
+                        <h4>Trade Levels <span
+                                style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"
+                                id="levelCountLabel">(0/11)</span></h4>
+                        <div
+                            style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;padding:6px 0;border-bottom:1px solid var(--border)">
+                            <span style="font-size:10px;color:var(--text-dim)">#</span>
+                            <span style="font-size:10px;color:var(--text-dim);text-align:center">Entry Diff</span>
+                            <span style="font-size:10px;color:var(--text-dim);text-align:center">Exit Diff</span>
+                            <span style="font-size:10px;color:var(--text-dim);text-align:center"># Pairs</span>
+                            <span></span>
+                        </div>
+                        <div id="levelsContainer"></div>
+                        <button class="btn-add-level" onclick="addLevel()">+ Add Level</button>
+                    </div>
+
+                    <button class="btn-save-config" onclick="saveConfig()">💾 Save Configuration</button>
                 </div>
             </div>
 
             <!-- HISTORY VIEW -->
             <div id="historyView" class="view">
-                <div class="section-header">Trade History</div>
-                <div id="historyList">
-                    <p style="text-align: center; color: var(--text-dim); padding: 40px;">History will appear here after
-                        trades are closed.</p>
+                <div class="section-header">
+                    Trade History
+                    <div style="display:flex;gap:8px">
+                        <span id="histFilterToday" onclick="histFilter('today')"
+                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--accent);color:#000;font-weight:700">Today</span>
+                        <span id="histFilterWeek" onclick="histFilter('week')"
+                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">Week</span>
+                        <span id="histFilterAll" onclick="histFilter('all')"
+                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">All</span>
+                    </div>
+                </div>
+                <div id="historyList" class="settings-section" style="padding-top:0;padding-bottom:0">
+                    <p style="text-align: center; color: var(--text-dim); padding: 40px;">No history yet.</p>
                 </div>
             </div>
         </main>
@@ -641,10 +1082,25 @@
         <div class="drawer-content">
             <div class="drawer-header">
                 <h3>Equivault FX</h3>
-                <p style="font-size: 12px; color: var(--text-dim)">v1.0.4-premium</p>
+                <p style="font-size: 12px; color: var(--text-dim)">v2.0.0-expert</p>
             </div>
-            <div class="drawer-item">Settings</div>
-            <div class="drawer-item">Support</div>
+
+            <!-- Subscription Section -->
+            <div style="padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+                <div style="display:flex;align-items:center;margin-bottom:6px">
+                    <span style="font-size:13px;font-weight:700">Your Plan</span>
+                    <span id="tierBadge" class="sub-tier-badge free">FREE</span>
+                </div>
+                <p id="subExpiry" style="font-size:11px;color:var(--text-dim);margin-bottom:10px">No active subscription
+                </p>
+                <div class="activation-row">
+                    <input type="text" id="activationCodeInput" placeholder="EQUI-XXXX-XXXX" maxlength="14" />
+                    <button class="btn-activate" onclick="activateCode()">✓</button>
+                </div>
+                <p id="activationMsg" style="font-size:11px;color:var(--text-dim);margin-top:4px"></p>
+            </div>
+
+            <div class="drawer-item" onclick="contactSupport()">📩 Contact Support</div>
             <div class="drawer-item danger" id="logoutBtn">Disconnect Account</div>
         </div>
     </div>
@@ -867,6 +1323,333 @@
                 window.location.reload();
             });
         });
+
+        /* ── EA Config & Levels ────────────────────────────────────────── */
+        var levels = [];
+        var maxLevels = 0;
+        var eaStatusTimer = null;
+        var histPeriod = 'today';
+        var subTier = 'free';
+
+        function renderLevels() {
+            var container = document.getElementById('levelsContainer');
+            document.getElementById('levelCountLabel').textContent = '(' + levels.length + '/11)';
+            if (!container) return;
+            var html = '';
+            for (var i = 0; i < levels.length; i++) {
+                var lv = levels[i];
+                html += '<div class="level-row" id="lrow' + i + '">' +
+                    '<span class="level-label">L' + (i + 1) + '</span>' +
+                    '<input type="number" step="0.01" placeholder="Entry" value="' + (lv.diffToTrade || '') + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" />' +
+                    '<input type="number" step="0.01" placeholder="Exit" value="' + (lv.diffToCut || '') + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" />' +
+                    '<input type="number" step="1" placeholder="Pairs" value="' + (lv.numPairs || '') + '" onchange="levels[' + i + '].numPairs=parseInt(this.value)" />' +
+                    '<button class="btn-del-level" onclick="delLevel(' + i + ')">✕</button>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function addLevel() {
+            if (levels.length >= 11) { alert('Maximum 11 levels allowed.'); return; }
+            if (maxLevels > 0 && levels.length >= maxLevels) {
+                alert('Your plan supports up to ' + maxLevels + ' levels.\nUpgrade to Premium for all 11 levels.');
+                return;
+            }
+            levels.push({ diffToTrade: 2.4, diffToCut: 2.0, numPairs: 1 });
+            renderLevels();
+        }
+
+        function delLevel(idx) {
+            levels.splice(idx, 1);
+            renderLevels();
+        }
+
+        function getConfigFromUI() {
+            return {
+                tradeType: document.getElementById('cfg_tradeType').value,
+                symbol1: document.getElementById('cfg_symbol1').value.trim(),
+                symbol2: document.getElementById('cfg_symbol2').value.trim(),
+                initialLot: parseFloat(document.getElementById('cfg_initialLot').value),
+                magicNo: parseInt(document.getElementById('cfg_magicNo').value),
+                stopLoss: parseFloat(document.getElementById('cfg_stopLoss').value) || 0,
+                takeProfit: parseFloat(document.getElementById('cfg_takeProfit').value) || 0,
+                symbolToTrade: document.getElementById('cfg_symbolToTrade').value,
+                symbolToClose: document.getElementById('cfg_symbolToClose').value,
+                tradeOnSameLevel: document.getElementById('cfg_tradeOnSameLevel').checked,
+                levels: levels
+            };
+        }
+
+        function applyConfigToUI(cfg) {
+            document.getElementById('cfg_tradeType').value = cfg.tradeType || 'buy';
+            document.getElementById('cfg_symbol1').value = cfg.symbol1 || 'XAUUSD';
+            document.getElementById('cfg_symbol2').value = cfg.symbol2 || 'XAUUSD.';
+            document.getElementById('cfg_initialLot').value = cfg.initialLot || 0.1;
+            document.getElementById('cfg_magicNo').value = cfg.magicNo || 12345;
+            document.getElementById('cfg_stopLoss').value = cfg.stopLoss || 0;
+            document.getElementById('cfg_takeProfit').value = cfg.takeProfit || 0;
+            document.getElementById('cfg_symbolToTrade').value = cfg.symbolToTrade || 'Sym1';
+            document.getElementById('cfg_symbolToClose').value = cfg.symbolToClose || 'Sym1';
+            document.getElementById('cfg_tradeOnSameLevel').checked = cfg.tradeOnSameLevel || false;
+            levels = Array.isArray(cfg.levels) ? cfg.levels : [];
+            renderLevels();
+            if (cfg.isRunning) updateEaStatus({ running: true });
+        }
+
+        function loadConfig(login) {
+            var initData = tg ? tg.initData : '';
+            fetch(API + '/api/ea/config/' + login, { headers: { 'x-telegram-init-data': initData } })
+                .then(function (r) { return r.json(); })
+                .then(function (cfg) { applyConfigToUI(cfg); })
+                .catch(function () { });
+        }
+
+        function saveConfig() {
+            var initData = tg ? tg.initData : '';
+            var cfg = getConfigFromUI();
+            fetch(API + '/api/ea/config/' + currentLogin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                body: JSON.stringify(cfg)
+            }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.ok) {
+                        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        alert('Configuration saved!');
+                    }
+                }).catch(function (e) { alert('Save failed: ' + e.message); });
+        }
+
+        /* ── EA Start / Stop ──────────────────────────────────────────── */
+        function eaStart() {
+            if (subTier === 'free') {
+                alert('Please activate a subscription to start the EA.');
+                document.getElementById('drawer').classList.add('active');
+                return;
+            }
+            var initData = tg ? tg.initData : '';
+            fetch(API + '/api/ea/start/' + currentLogin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData }
+            }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.ok) {
+                        updateEaStatus({ running: true });
+                        startEaPolling();
+                    } else { alert(d.message || 'Failed to start EA.'); }
+                }).catch(function (e) { alert('Error: ' + e.message); });
+        }
+
+        function eaStop() {
+            var initData = tg ? tg.initData : '';
+            fetch(API + '/api/ea/stop/' + currentLogin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData }
+            }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.ok) {
+                        updateEaStatus({ running: false });
+                        stopEaPolling();
+                    }
+                }).catch(function (e) { alert('Error: ' + e.message); });
+        }
+
+        function updateEaStatus(d) {
+            var chip = document.getElementById('eaStatusChip');
+            if (!chip) return;
+            if (d.running) {
+                chip.className = 'ea-status-chip running';
+                chip.textContent = '● Running';
+            } else {
+                chip.className = 'ea-status-chip stopped';
+                chip.textContent = '⏹ Stopped';
+            }
+            if (d.spreadBuy !== null && d.spreadBuy !== undefined) {
+                document.getElementById('eaSpreadBuy').textContent = d.spreadBuy.toFixed(2);
+            }
+            if (d.openPairs !== undefined) {
+                document.getElementById('eaOpenPairs').textContent = d.openPairs;
+            }
+            if (d.activeLevels !== undefined) {
+                document.getElementById('eaActiveLevels').textContent = d.activeLevels.length;
+            }
+            if (d.eaProfit !== undefined) {
+                var pEl = document.getElementById('eaProfit');
+                pEl.textContent = (d.eaProfit >= 0 ? '+' : '') + '$' + d.eaProfit.toFixed(2);
+                pEl.className = 'val ' + (d.eaProfit >= 0 ? 'p-up' : 'p-down');
+            }
+        }
+
+        function startEaPolling() {
+            stopEaPolling();
+            eaStatusTimer = setInterval(function () {
+                var initData = tg ? tg.initData : '';
+                fetch(API + '/api/ea/status/' + currentLogin, { headers: { 'x-telegram-init-data': initData } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) { updateEaStatus(d); })
+                    .catch(function () { });
+            }, 2000);
+        }
+
+        function stopEaPolling() {
+            if (eaStatusTimer) clearInterval(eaStatusTimer);
+            eaStatusTimer = null;
+        }
+
+        /* ── Subscription ─────────────────────────────────────────────── */
+        function checkSubscription() {
+            var initData = tg ? tg.initData : '';
+            fetch(API + '/api/subscription/status', { headers: { 'x-telegram-init-data': initData } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    subTier = d.tier || 'free';
+                    maxLevels = d.maxLevels || 0;
+                    var badge = document.getElementById('tierBadge');
+                    if (badge) {
+                        badge.textContent = subTier.toUpperCase();
+                        badge.className = 'sub-tier-badge ' + (subTier === 'free' ? 'free' : '');
+                    }
+                    var expEl = document.getElementById('subExpiry');
+                    if (expEl) {
+                        if (d.expiresAt) {
+                            expEl.textContent = 'Expires: ' + new Date(d.expiresAt).toLocaleDateString();
+                        } else if (subTier !== 'free') {
+                            expEl.textContent = 'Never expires';
+                        } else {
+                            expEl.textContent = 'No active subscription';
+                        }
+                    }
+                    applySubscriptionGate();
+                }).catch(function () { });
+        }
+
+        function applySubscriptionGate() {
+            var lock = document.getElementById('expertLock');
+            var panel = document.getElementById('expertPanel');
+            if (!lock || !panel) return;
+            if (subTier === 'free') {
+                lock.classList.remove('hidden');
+                panel.style.display = 'none';
+            } else {
+                lock.classList.add('hidden');
+                panel.style.display = 'block';
+            }
+        }
+
+        function activateCode() {
+            var code = (document.getElementById('activationCodeInput').value || '').trim().toUpperCase();
+            var msgEl = document.getElementById('activationMsg');
+            if (!code) { msgEl.textContent = 'Please enter a code.'; return; }
+            var initData = tg ? tg.initData : '';
+            msgEl.textContent = 'Activating...';
+            fetch(API + '/api/subscription/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                body: JSON.stringify({ code: code })
+            }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.ok) {
+                        msgEl.style.color = 'var(--success)';
+                        msgEl.textContent = '✓ ' + d.tier.toUpperCase() + ' activated — ' + d.durationDays + ' days!';
+                        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        checkSubscription();
+                    } else {
+                        msgEl.style.color = 'var(--danger)';
+                        msgEl.textContent = '✗ ' + (d.message || 'Invalid code.');
+                    }
+                }).catch(function (e) {
+                    msgEl.style.color = 'var(--danger)';
+                    msgEl.textContent = 'Error: ' + e.message;
+                });
+        }
+
+        /* ── History Tab ──────────────────────────────────────────────── */
+        var allHistory = [];
+
+        function histFilter(period) {
+            histPeriod = period;
+            ['today', 'week', 'all'].forEach(function (p) {
+                var el = document.getElementById('histFilter' + p.charAt(0).toUpperCase() + p.slice(1));
+                if (el) {
+                    el.style.background = p === period ? 'var(--accent)' : 'var(--surface)';
+                    el.style.color = p === period ? '#000' : 'var(--text-dim)';
+                }
+            });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            var listEl = document.getElementById('historyList');
+            if (!listEl) return;
+            var now = new Date();
+            var filtered = allHistory.filter(function (h) {
+                if (histPeriod === 'today') {
+                    var d = new Date(h.time * 1000);
+                    return d.toDateString() === now.toDateString();
+                } else if (histPeriod === 'week') {
+                    return (now - new Date(h.time * 1000)) < 7 * 86400 * 1000;
+                }
+                return true;
+            });
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center;color:var(--text-dim);padding:40px">No history for this period.</p>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < filtered.length; i++) {
+                var h = filtered[i];
+                var isProfit = h.profit >= 0;
+                var d = new Date(h.time * 1000);
+                var ds = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += '<div class="history-row">' +
+                    '<div class="history-meta">' +
+                    '<div class="symbol">' + h.symbol + ' <span class="trade-icon ' + (h.type === 'buy' ? 'buy' : 'sell') + '" style="display:inline;padding:2px 6px;border-radius:4px;font-size:10px">' + h.type.toUpperCase() + '</span></div>' +
+                    '<div class="sub">' + h.volume + ' Lots · ' + ds + '</div>' +
+                    '</div>' +
+                    '<div class="history-profit ' + (isProfit ? 'p-up' : 'p-down') + '">' + (isProfit ? '+' : '') + '$' + h.profit.toFixed(2) + '</div>' +
+                    '</div>';
+            }
+            listEl.innerHTML = html;
+        }
+
+        function fetchHistory(login) {
+            var initData = tg ? tg.initData : '';
+            fetch(API + '/api/mt5/data/' + login + '?history=1', { headers: { 'x-telegram-init-data': initData } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.status === 'success' && d.deals) {
+                        allHistory = d.deals;
+                        renderHistory();
+                    }
+                }).catch(function () { });
+        }
+
+        /* ── Contact Support ─────────────────────────────────────────── */
+        function contactSupport() {
+            if (tg) {
+                tg.openTelegramLink('https://t.me/EquivaultFX');
+            } else {
+                window.open('https://t.me/EquivaultFX', '_blank');
+            }
+        }
+
+        /* ── Hook into enterAppShell to load EA data ─────────────────── */
+        var _origEnterAppShell = enterAppShell;
+        enterAppShell = function (login) {
+            _origEnterAppShell(login);
+            checkSubscription();
+            loadConfig(login);
+            fetchHistory(login);
+        };
+
+        // Reload history when tab is clicked
+        for (var _i = 0; _i < tabs.length; _i++) {
+            tabs[_i].addEventListener('click', function () {
+                if (this.getAttribute('data-view') === 'historyView') {
+                    fetchHistory(currentLogin);
+                }
+            });
+        }
 
     </script>
 </body>
