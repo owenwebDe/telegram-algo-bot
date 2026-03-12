@@ -39,6 +39,7 @@ router.get(
                     symbolToTrade: 'Sym1',
                     symbolToClose: 'Sym1',
                     tradeOnSameLevel: false,
+                    slippage: 1,
                     levels: [],
                     isRunning: false,
                 });
@@ -54,9 +55,10 @@ router.get(
                 magicNo: config.magic_no,
                 stopLoss: config.stop_loss,
                 takeProfit: config.take_profit,
-                symbolToTrade: config.symbol_to_trade,
-                symbolToClose: config.symbol_to_close,
-                tradeOnSameLevel: config.trade_on_same_level,
+                symbol_to_trade: config.symbol_to_trade,
+                symbol_to_close: config.symbol_to_close,
+                trade_on_same_level: config.trade_on_same_level,
+                slippage: config.slippage,
                 levels: config.levels,
                 isRunning: config.is_running,
             });
@@ -93,6 +95,7 @@ router.post(
                     symbol_to_trade: body.symbolToTrade,
                     symbol_to_close: body.symbolToClose,
                     trade_on_same_level: Boolean(body.tradeOnSameLevel),
+                    slippage: parseFloat(body.slippage ?? 1),
                     levels: Array.isArray(body.levels) ? body.levels : [],
                 },
             });
@@ -117,12 +120,8 @@ router.post(
             const user = await upsertUserByTelegramId(req.telegramUser!.id);
             const config = await getEaConfig(user.id, login);
 
-            if (!config) {
-                res.status(400).json({ error: 'NoConfig', message: 'Save configuration first.' });
-                return;
-            }
-
-            const eaConfig = {
+            // Allow starting even if no config is in DB - uses sensible defaults
+            const eaConfig = config ? {
                 tradeType: config.trade_type,
                 symbol1: config.symbol1,
                 symbol2: config.symbol2,
@@ -133,7 +132,27 @@ router.post(
                 symbolToTrade: config.symbol_to_trade,
                 symbolToClose: config.symbol_to_close,
                 tradeOnSameLevel: config.trade_on_same_level,
+                slippage: config.slippage,
                 levels: config.levels,
+            } : {
+                tradeType: 'buy',
+                symbol1: 'XAUUSD',
+                symbol2: 'XAUUSD.',
+                initialLot: 0.01,
+                magicNo: 12345,
+                stopLoss: 0,
+                takeProfit: 0,
+                symbolToTrade: '1',
+                symbolToClose: '1',
+                tradeOnSameLevel: true,
+                slippage: 1,
+                levels: Array(11).fill(null).map((_, i) => ({
+                    lot: 0.01 * Math.pow(2, i),
+                    diffOpen: i + 1,
+                    diffCut: i + 2,
+                    numPairs: 1,
+                    label: `Level ${i + 1}`,
+                })),
             };
 
             instanceManager.startEaEngine(user.id.toString(), login, eaConfig);

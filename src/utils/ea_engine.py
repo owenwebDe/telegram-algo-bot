@@ -68,7 +68,7 @@ def normalize(val: float, digits: int = 2) -> float:
     return round(val, digits)
 
 
-def place_buy(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: int) -> int:
+def place_buy(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: int, deviation: int = 10) -> int:
     tick = mt5.symbol_info_tick(symbol)
     if not tick:
         return -1
@@ -85,7 +85,7 @@ def place_buy(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: in
         "sl": sl,
         "tp": tp,
         "magic": magic,
-        "deviation": 10,
+        "deviation": deviation,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
     result = mt5.order_send(req)
@@ -95,7 +95,7 @@ def place_buy(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: in
     return -1
 
 
-def place_sell(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: int) -> int:
+def place_sell(symbol: str, lot: float, sl_pips: float, tp_pips: float, magic: int, deviation: int = 10) -> int:
     tick = mt5.symbol_info_tick(symbol)
     if not tick:
         return -1
@@ -233,6 +233,8 @@ def run(path: str, login: str, config: dict):
     symbol_to_trade   = config.get("symbolToTrade", "Sym1")     # "Sym1" | "Sym2"
     symbol_to_close   = config.get("symbolToClose", "Sym1")
     cfg_trade_on_same_level = bool(config.get("tradeOnSameLevel", False))
+    slippage          = int(config.get("slippage", 1))
+    deviation         = slippage * 10  # convert pips to points
     levels            = config.get("levels", [])               # list of level dicts
 
     # ── MT5 Connection ──────────────────────────────────────────────────────
@@ -297,18 +299,18 @@ def run(path: str, login: str, config: dict):
                 for _ in range(num_pairs):
                     if is_buy:
                         if symbol_to_trade == "Sym1":
-                            t1 = place_buy(open_sym1, initial_lot, stop_loss, take_profit, magic_no)
-                            t2 = place_sell(open_sym2, initial_lot, stop_loss, take_profit, magic_no)
+                            t1 = place_buy(open_sym1, initial_lot, stop_loss, take_profit, magic_no, deviation)
+                            t2 = place_sell(open_sym2, initial_lot, stop_loss, take_profit, magic_no, deviation)
                         else:
-                            t2 = place_sell(open_sym2, initial_lot, stop_loss, take_profit, magic_no)
-                            t1 = place_buy(open_sym1, initial_lot, stop_loss, take_profit, magic_no)
+                            t2 = place_sell(open_sym2, initial_lot, stop_loss, take_profit, magic_no, deviation)
+                            t1 = place_buy(open_sym1, initial_lot, stop_loss, take_profit, magic_no, deviation)
                     else:
                         if symbol_to_trade == "Sym1":
-                            t1 = place_sell(open_sym1, initial_lot, stop_loss, take_profit, magic_no)
-                            t2 = place_buy(open_sym2, initial_lot, stop_loss, take_profit, magic_no)
+                            t1 = place_sell(open_sym1, initial_lot, stop_loss, take_profit, magic_no, deviation)
+                            t2 = place_buy(open_sym2, initial_lot, stop_loss, take_profit, magic_no, deviation)
                         else:
-                            t2 = place_buy(open_sym2, initial_lot, stop_loss, take_profit, magic_no)
-                            t1 = place_sell(open_sym1, initial_lot, stop_loss, take_profit, magic_no)
+                            t2 = place_buy(open_sym2, initial_lot, stop_loss, take_profit, magic_no, deviation)
+                            t1 = place_sell(open_sym1, initial_lot, stop_loss, take_profit, magic_no, deviation)
 
                     if t1 != -1 and t2 != -1:
                         add_ticket_to_level(i, t1)
@@ -333,9 +335,15 @@ def run(path: str, login: str, config: dict):
                              if check_trade_on_level(i)]
             total_pairs = sum(get_active_pair_count(r) for r in order_records if r.level != -1)
             ea_profit = get_ea_profit(magic_no, symbol1, symbol2)
+            
+            # Check if Algo Trading is actually enabled in the terminal
+            t_info = mt5.terminal_info()
+            trade_allowed = t_info.trade_allowed if t_info else False
+
             print(json.dumps({
                 "type": "heartbeat",
                 "running": True,
+                "terminal_trade_allowed": trade_allowed,
                 "spread_buy": diff_open_buy,
                 "spread_sell": diff_open_sell,
                 "active_levels": active_levels,

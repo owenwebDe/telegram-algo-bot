@@ -144,6 +144,7 @@ export interface EaConfigRow {
   symbol_to_trade: string;
   symbol_to_close: string;
   trade_on_same_level: boolean;
+  slippage: number;
   levels: object[];
   created_at: Date;
   updated_at: Date;
@@ -158,8 +159,8 @@ export async function upsertEaConfig(params: {
   const result = await query<EaConfigRow>(
     `INSERT INTO ea_configs
        (user_id, login, trade_type, symbol1, symbol2, initial_lot, magic_no, stop_loss,
-        take_profit, symbol_to_trade, symbol_to_close, trade_on_same_level, levels, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb, NOW())
+        take_profit, symbol_to_trade, symbol_to_close, trade_on_same_level, slippage, levels, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb, NOW())
      ON CONFLICT (user_id, login) DO UPDATE SET
        trade_type          = EXCLUDED.trade_type,
        symbol1             = EXCLUDED.symbol1,
@@ -171,6 +172,7 @@ export async function upsertEaConfig(params: {
        symbol_to_trade     = EXCLUDED.symbol_to_trade,
        symbol_to_close     = EXCLUDED.symbol_to_close,
        trade_on_same_level = EXCLUDED.trade_on_same_level,
+       slippage            = EXCLUDED.slippage,
        levels              = EXCLUDED.levels,
        updated_at          = NOW()
      RETURNING *`,
@@ -179,7 +181,7 @@ export async function upsertEaConfig(params: {
       c.trade_type ?? 'buy', c.symbol1 ?? 'XAUUSD', c.symbol2 ?? 'XAUUSD.',
       c.initial_lot ?? 0.1, c.magic_no ?? 12345, c.stop_loss ?? 0, c.take_profit ?? 0,
       c.symbol_to_trade ?? 'Sym1', c.symbol_to_close ?? 'Sym1',
-      c.trade_on_same_level ?? false, JSON.stringify(c.levels ?? []),
+      c.trade_on_same_level ?? false, c.slippage ?? 1, JSON.stringify(c.levels ?? []),
     ],
   );
   return result.rows[0]!;

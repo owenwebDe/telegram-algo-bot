@@ -13,12 +13,16 @@
             --bg: #0b0b0f;
             --surface: #12121a;
             --surface-hover: #1a1a24;
+            --layer-1: rgba(22, 22, 32, 0.7);
+            --layer-2: rgba(30, 30, 45, 0.8);
             --card: #161620;
             --accent: #00d4aa;
             --accent-glow: rgba(0, 212, 170, 0.15);
             --text: #ffffff;
             --text-dim: #94a3b8;
             --border: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --blur: saturate(180%) blur(20px);
             --danger: #ff4757;
             --success: #2ed573;
             --warning: #ffa502;
@@ -563,26 +567,37 @@
 
         .btn-ea-start {
             flex: 1;
-            padding: 14px;
-            background: var(--success);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--success), #1cb65d);
             color: #000;
             border: none;
-            border-radius: 12px;
-            font-weight: 700;
+            border-radius: 14px;
+            font-weight: 800;
             font-size: 15px;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-ea-start:active {
+            transform: scale(0.98);
         }
 
         .btn-ea-stop {
             flex: 1;
-            padding: 14px;
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
+            padding: 16px;
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 14px;
+            font-weight: 800;
             font-size: 15px;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ea-stop:active {
+            transform: scale(0.98);
         }
 
         .settings-section {
@@ -831,6 +846,143 @@
             font-size: 15px;
             font-weight: 800;
         }
+
+        /* ── Overlays (Loader & Tour) ────────────────────────── */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.hidden {
+            display: none;
+            opacity: 0;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 212, 170, 0.1);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader-text {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .loader-subtext {
+            font-size: 13px;
+            color: var(--text-dim);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Tour Styles */
+        .summary-card {
+            background: var(--layer-1);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        .tour-card {
+            background: var(--layer-2);
+            width: 85%;
+            max-width: 320px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 32px 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: translateY(0);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .tour-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .tour-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .tour-desc {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .tour-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -916,8 +1068,8 @@
 
             <!-- EXPERT VIEW -->
             <div id="expertView" class="view">
-                <!-- Locked / Upgrading state -->
-                <div id="expertLock" class="locked-banner hidden">
+                <!-- Locked / Upgrading state (DISABLED: Everything is Free) -->
+                <div id="expertLock" class="locked-banner hidden" style="display:none !important">
                     <div class="lock-icon">🔒</div>
                     <h3 style="margin-bottom:8px">Premium Feature</h3>
                     <p style="color:var(--text-dim);font-size:14px;margin-bottom:20px">
@@ -932,28 +1084,66 @@
                 <!-- EA Control Panel -->
                 <div id="expertPanel">
                     <!-- Status + Action -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                        <h3 style="font-size:17px;font-weight:800">Expert Advisor</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <h3 style="font-size:17px;font-weight:800">Expert Advisor</h3>
+                            <span id="eaDirectionBadge"
+                                style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--accent-glow);color:var(--accent);font-weight:700;text-transform:uppercase">Buy
+                                Only</span>
+                        </div>
                         <span id="eaStatusChip" class="ea-status-chip stopped">⏹ Stopped</span>
                     </div>
 
+                    <!-- Algo Warning -->
+                    <div id="algoWarning" class="hidden"
+                        style="background:rgba(255,165,2,0.1); border:1px solid var(--warning); border-radius:12px; padding:10px; margin-bottom:16px; font-size:12px; color:var(--warning); display:flex; align-items:center; gap:8px">
+                        <span>⚠️</span>
+                        <span><b>Algo Trading Disabled!</b> Enable it in your MT5 terminal for the EA to place
+                            trades.</span>
+                    </div>
+
                     <!-- Live Stats -->
-                    <div class="ea-stat-grid">
-                        <div class="ea-stat-card">
-                            <div class="label">Spread (Buy)</div>
-                            <div id="eaSpreadBuy" class="val">—</div>
+                    <div class="ea-stat-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div class="ea-stat-card" style="grid-column: span 2; padding: 12px 16px;">
+                            <div class="label" id="eaFormulaLabel"
+                                style="margin-bottom:4px; font-family:monospace; color:var(--accent); font-size:11px">
+                                Math:
+                                Sym1 Ask - Sym2 Bid</div>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end">
+                                <div>
+                                    <div class="label">Difference to Trade</div>
+                                    <div id="eaSpreadBuy" class="val" style="font-size:24px">—</div>
+                                </div>
+                                <div style="text-align:right">
+                                    <div class="label">Difference to Close</div>
+                                    <div id="eaSpreadSell" class="val" style="color:var(--text-dim)">—</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="ea-stat-card">
+
+                        <div class="ea-stat-card" style="padding: 10px 14px;">
+                            <div class="label" id="labelSym1">Symbol 1</div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px">
+                                <span>A: <b id="eaAsk1">—</b></span>
+                                <span>B: <b id="eaBid1">—</b></span>
+                            </div>
+                        </div>
+
+                        <div class="ea-stat-card" style="padding: 10px 14px;">
+                            <div class="label" id="labelSym2">Symbol 2</div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px">
+                                <span>A: <b id="eaAsk2">—</b></span>
+                                <span>B: <b id="eaBid2">—</b></span>
+                            </div>
+                        </div>
+
+                        <div class="ea-stat-card" style="padding: 10px 14px;">
                             <div class="label">Open Pairs</div>
-                            <div id="eaOpenPairs" class="val">0</div>
+                            <div id="eaOpenPairs" class="val" style="font-size:16px">0</div>
                         </div>
-                        <div class="ea-stat-card">
-                            <div class="label">Active Levels</div>
-                            <div id="eaActiveLevels" class="val">0</div>
-                        </div>
-                        <div class="ea-stat-card">
+                        <div class="ea-stat-card" style="padding: 10px 14px;">
                             <div class="label">EA Profit</div>
-                            <div id="eaProfit" class="val p-up">$0.00</div>
+                            <div id="eaProfit" class="val p-up" style="font-size:16px">$0.00</div>
                         </div>
                     </div>
 
@@ -988,6 +1178,10 @@
                         <div class="form-row">
                             <label>Magic Number</label>
                             <input type="number" id="cfg_magicNo" value="12345" />
+                        </div>
+                        <div class="form-row">
+                            <label>Slippage (pips)</label>
+                            <input type="number" id="cfg_slippage" value="1" min="0" step="1" />
                         </div>
                         <div class="form-row">
                             <label>Stop Loss (pips)</label>
@@ -1026,11 +1220,14 @@
                                 style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"
                                 id="levelCountLabel">(0/11)</span></h4>
                         <div
-                            style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;padding:6px 0;border-bottom:1px solid var(--border)">
-                            <span style="font-size:10px;color:var(--text-dim)">#</span>
-                            <span style="font-size:10px;color:var(--text-dim);text-align:center">Entry Diff</span>
-                            <span style="font-size:10px;color:var(--text-dim);text-align:center">Exit Diff</span>
-                            <span style="font-size:10px;color:var(--text-dim);text-align:center"># Pairs</span>
+                            style="display:grid;grid-template-columns:30px 1fr 1fr 1fr 40px;gap:6px;padding:8px 0;border-bottom:1px solid var(--glass-border); align-items:center">
+                            <span style="font-size:10px;color:var(--text-dim);font-weight:700">LVL</span>
+                            <span style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">TRADE
+                                DIFF</span>
+                            <span style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">CLOSE
+                                DIFF</span>
+                            <span
+                                style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">PAIRS</span>
                             <span></span>
                         </div>
                         <div id="levelsContainer"></div>
@@ -1085,8 +1282,8 @@
                 <p style="font-size: 12px; color: var(--text-dim)">v2.0.0-expert</p>
             </div>
 
-            <!-- Subscription Section -->
-            <div style="padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+            <!-- Subscription Section (HIDDEN: Everything is Free) -->
+            <div style="display:none !important">
                 <div style="display:flex;align-items:center;margin-bottom:6px">
                     <span style="font-size:13px;font-weight:700">Your Plan</span>
                     <span id="tierBadge" class="sub-tier-badge free">FREE</span>
@@ -1102,6 +1299,25 @@
 
             <div class="drawer-item" onclick="contactSupport()">📩 Contact Support</div>
             <div class="drawer-item danger" id="logoutBtn">Disconnect Account</div>
+        </div>
+    </div>
+
+    <!-- ── Connection Loader Overlay (RESTORED) ── -->
+    <div id="connectionLoader" class="overlay hidden">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text" id="loaderTitle">Connecting to Broker</div>
+            <div class="loader-subtext" id="loaderSub">Syncing AI Core...</div>
+        </div>
+    </div>
+
+    <!-- ── Onboarding App Tour Overlay (RESTORED) ── -->
+    <div id="appTour" class="overlay hidden">
+        <div class="tour-card">
+            <span class="tour-icon" id="tourIcon">🚀</span>
+            <h2 class="tour-title" id="tourTitle">Welcome to Equivault</h2>
+            <p class="tour-desc" id="tourDesc">The most advanced AI-powered trading interface for Telegram.</p>
+            <button class="tour-btn" id="tourNext">Get Started</button>
         </div>
     </div>
 
@@ -1135,6 +1351,39 @@
         }
 
         /* ── Navigation ────────────────────────────────────────────────── */
+        var tourSteps = [
+            { icon: '🚀', title: 'Welcome to Equivault', desc: 'The most advanced AI-powered trading interface for Telegram.' },
+            { icon: '📊', title: 'Live Dashboard', desc: 'Monitor your spreads, active trades, and market conditions in real-time with glassmorphism precision.' },
+            { icon: '🤖', title: 'Expert Advisor', desc: 'Deploy automated strategies across 11 grid levels with our integrated AI core.' },
+            { icon: '⚡', title: 'Stay Connected', desc: 'Your account is now synced. Tap "Get Started" to begin your premium trading experience.' }
+        ];
+        var currentTourStep = 0;
+
+        function startAppTour() {
+            if (localStorage.getItem('equivault_tour_shown')) return;
+            var overlay = document.getElementById('appTour');
+            overlay.classList.remove('hidden');
+            renderTourStep();
+
+            document.getElementById('tourNext').onclick = function () {
+                currentTourStep++;
+                if (currentTourStep < tourSteps.length) {
+                    renderTourStep();
+                } else {
+                    overlay.classList.add('hidden');
+                    localStorage.setItem('equivault_tour_shown', 'true');
+                }
+            };
+        }
+
+        function renderTourStep() {
+            var step = tourSteps[currentTourStep];
+            document.getElementById('tourIcon').textContent = step.icon;
+            document.getElementById('tourTitle').textContent = step.title;
+            document.getElementById('tourDesc').textContent = step.desc;
+            document.getElementById('tourNext').textContent = currentTourStep === tourSteps.length - 1 ? 'Finish' : 'Next';
+        }
+
         var tabs = document.querySelectorAll('.tab-btn');
         var views = document.querySelectorAll('.view');
 
@@ -1192,6 +1441,17 @@
         });
 
         function startLoginPolling(login) {
+            var loader = document.getElementById('connectionLoader');
+            var loaderSub = document.getElementById('loaderSub');
+            var statusTexts = ["Syncing AI Core...", "Checking Margin...", "Authenticating...", "Ready for Lift-off!"];
+            var textIdx = 0;
+
+            loader.classList.remove('hidden');
+            var textInterval = setInterval(function () {
+                textIdx = (textIdx + 1) % statusTexts.length;
+                loaderSub.textContent = statusTexts[textIdx];
+            }, 800);
+
             pollTimer = setInterval(function () {
                 var initData = tg ? tg.initData : '';
                 fetch(API + '/api/mt5/status/' + login, {
@@ -1200,15 +1460,19 @@
                     .then(function (data) {
                         if (data.status === 'connected') {
                             clearInterval(pollTimer);
+                            clearInterval(textInterval);
+                            loader.classList.add('hidden');
                             enterAppShell(login);
                         } else if (data.status === 'failed') {
                             clearInterval(pollTimer);
+                            clearInterval(textInterval);
+                            loader.classList.add('hidden');
                             alert('Login failed. Please check credentials.');
                             document.getElementById('connectBtn').disabled = false;
                             document.getElementById('connectBtn').textContent = 'Connect Terminal';
                         }
                     });
-            }, 3000);
+            }, 2000);
         }
 
         function enterAppShell(login) {
@@ -1351,10 +1615,6 @@
 
         function addLevel() {
             if (levels.length >= 11) { alert('Maximum 11 levels allowed.'); return; }
-            if (maxLevels > 0 && levels.length >= maxLevels) {
-                alert('Your plan supports up to ' + maxLevels + ' levels.\nUpgrade to Premium for all 11 levels.');
-                return;
-            }
             levels.push({ diffToTrade: 2.4, diffToCut: 2.0, numPairs: 1 });
             renderLevels();
         }
@@ -1365,12 +1625,13 @@
         }
 
         function getConfigFromUI() {
-            return {
+            var cfg = {
                 tradeType: document.getElementById('cfg_tradeType').value,
                 symbol1: document.getElementById('cfg_symbol1').value.trim(),
                 symbol2: document.getElementById('cfg_symbol2').value.trim(),
-                initialLot: parseFloat(document.getElementById('cfg_initialLot').value),
-                magicNo: parseInt(document.getElementById('cfg_magicNo').value),
+                initialLot: parseFloat(document.getElementById('cfg_initialLot').value) || 0.1,
+                magicNo: parseInt(document.getElementById('cfg_magicNo').value) || 12345,
+                slippage: parseFloat(document.getElementById('cfg_slippage').value) || 1,
                 stopLoss: parseFloat(document.getElementById('cfg_stopLoss').value) || 0,
                 takeProfit: parseFloat(document.getElementById('cfg_takeProfit').value) || 0,
                 symbolToTrade: document.getElementById('cfg_symbolToTrade').value,
@@ -1378,14 +1639,17 @@
                 tradeOnSameLevel: document.getElementById('cfg_tradeOnSameLevel').checked,
                 levels: levels
             };
+            return cfg;
         }
 
         function applyConfigToUI(cfg) {
+            if (!cfg) return;
             document.getElementById('cfg_tradeType').value = cfg.tradeType || 'buy';
             document.getElementById('cfg_symbol1').value = cfg.symbol1 || 'XAUUSD';
             document.getElementById('cfg_symbol2').value = cfg.symbol2 || 'XAUUSD.';
             document.getElementById('cfg_initialLot').value = cfg.initialLot || 0.1;
             document.getElementById('cfg_magicNo').value = cfg.magicNo || 12345;
+            document.getElementById('cfg_slippage').value = cfg.slippage || 1;
             document.getElementById('cfg_stopLoss').value = cfg.stopLoss || 0;
             document.getElementById('cfg_takeProfit').value = cfg.takeProfit || 0;
             document.getElementById('cfg_symbolToTrade').value = cfg.symbolToTrade || 'Sym1';
@@ -1457,6 +1721,8 @@
         function updateEaStatus(d) {
             var chip = document.getElementById('eaStatusChip');
             if (!chip) return;
+
+            // Running State
             if (d.running) {
                 chip.className = 'ea-status-chip running';
                 chip.textContent = '● Running';
@@ -1464,19 +1730,50 @@
                 chip.className = 'ea-status-chip stopped';
                 chip.textContent = '⏹ Stopped';
             }
+
+            // Direction & Formula
+            var dir = d.tradeType || document.getElementById('cfg_tradeType').value;
+            var badge = document.getElementById('eaDirectionBadge');
+            var formula = document.getElementById('eaFormulaLabel');
+            if (dir === 'buy') {
+                if (badge) { badge.textContent = 'Buy Only'; badge.style.background = 'rgba(0,210,211,0.1)'; badge.style.color = '#00d2d3'; }
+                if (formula) formula.textContent = 'Math: Sym1 Ask - Sym2 Bid';
+            } else {
+                if (badge) { badge.textContent = 'Sell Only'; badge.style.background = 'rgba(255,107,107,0.1)'; badge.style.color = '#ff6b6b'; }
+                if (formula) formula.textContent = 'Math: Sym1 Bid - Sym2 Ask';
+            }
+
+            // Spreads / Differences
             if (d.spreadBuy !== null && d.spreadBuy !== undefined) {
                 document.getElementById('eaSpreadBuy').textContent = d.spreadBuy.toFixed(2);
             }
-            if (d.openPairs !== undefined) {
-                document.getElementById('eaOpenPairs').textContent = d.openPairs;
+            if (d.spreadSell !== null && d.spreadSell !== undefined) {
+                document.getElementById('eaSpreadSell').textContent = d.spreadSell.toFixed(2);
             }
-            if (d.activeLevels !== undefined) {
-                document.getElementById('eaActiveLevels').textContent = d.activeLevels.length;
-            }
+
+            // Symbol Prices
+            if (d.ask1) document.getElementById('eaAsk1').textContent = d.ask1.toFixed(d.digits1 || 2);
+            if (d.bid1) document.getElementById('eaBid1').textContent = d.bid1.toFixed(d.digits1 || 2);
+            if (d.ask2) document.getElementById('eaAsk2').textContent = d.ask2.toFixed(d.digits2 || 2);
+            if (d.bid2) document.getElementById('eaBid2').textContent = d.bid2.toFixed(d.digits2 || 2);
+
+            // Labels
+            if (d.symbol1) document.getElementById('labelSym1').textContent = d.symbol1;
+            if (d.symbol2) document.getElementById('labelSym2').textContent = d.symbol2;
+
+            // Stats
+            if (d.openPairs !== undefined) document.getElementById('eaOpenPairs').textContent = d.openPairs;
             if (d.eaProfit !== undefined) {
                 var pEl = document.getElementById('eaProfit');
                 pEl.textContent = (d.eaProfit >= 0 ? '+' : '') + '$' + d.eaProfit.toFixed(2);
                 pEl.className = 'val ' + (d.eaProfit >= 0 ? 'p-up' : 'p-down');
+            }
+
+            // Algo Warning
+            var warn = document.getElementById('algoWarning');
+            if (warn) {
+                if (d.running && d.trade_allowed === false) warn.classList.remove('hidden');
+                else warn.classList.add('hidden');
             }
         }
 
@@ -1498,29 +1795,19 @@
 
         /* ── Subscription ─────────────────────────────────────────────── */
         function checkSubscription() {
-            var initData = tg ? tg.initData : '';
-            fetch(API + '/api/subscription/status', { headers: { 'x-telegram-init-data': initData } })
-                .then(function (r) { return r.json(); })
-                .then(function (d) {
-                    subTier = d.tier || 'free';
-                    maxLevels = d.maxLevels || 0;
-                    var badge = document.getElementById('tierBadge');
-                    if (badge) {
-                        badge.textContent = subTier.toUpperCase();
-                        badge.className = 'sub-tier-badge ' + (subTier === 'free' ? 'free' : '');
-                    }
-                    var expEl = document.getElementById('subExpiry');
-                    if (expEl) {
-                        if (d.expiresAt) {
-                            expEl.textContent = 'Expires: ' + new Date(d.expiresAt).toLocaleDateString();
-                        } else if (subTier !== 'free') {
-                            expEl.textContent = 'Never expires';
-                        } else {
-                            expEl.textContent = 'No active subscription';
-                        }
-                    }
-                    applySubscriptionGate();
-                }).catch(function () { });
+            // EVERYTHING IS FREE - ALWAYS PREMIUM
+            subTier = 'premium';
+            maxLevels = 11;
+            var badge = document.getElementById('tierBadge');
+            if (badge) {
+                badge.textContent = 'PREMIUM';
+                badge.className = 'sub-tier-badge';
+            }
+            var expEl = document.getElementById('subExpiry');
+            if (expEl) {
+                expEl.textContent = 'Equivault Pro Active';
+            }
+            applySubscriptionGate();
         }
 
         function applySubscriptionGate() {
@@ -1640,6 +1927,7 @@
             checkSubscription();
             loadConfig(login);
             fetchHistory(login);
+            startAppTour();
         };
 
         // Reload history when tab is clicked

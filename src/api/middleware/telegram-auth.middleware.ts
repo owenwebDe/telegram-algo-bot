@@ -122,6 +122,12 @@ export function telegramAuthMiddleware(
 
   const result = verifyTelegramInitData(initData, env.telegramBotToken);
   if (!result.ok) {
+    if (env.allowAuthBypass) {
+      logger.warn('DEV MODE: Telegram auth failed but bypassed', { reason: result.reason });
+      req.telegramUser = { id: 1, first_name: 'DevUser', username: 'dev_tester' };
+      next();
+      return;
+    }
     logger.warn('Telegram auth failed', { reason: result.reason, ip: req.ip });
     res.status(401).json({ error: 'Unauthorized', message: result.reason });
     return;

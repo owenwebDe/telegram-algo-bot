@@ -24,23 +24,28 @@ router.get(
     telegramAuthMiddleware,
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const user = await upsertUserByTelegramId(req.telegramUser!.id);
-            const sub = await getSubscription(user.id);
+            // const user = await upsertUserByTelegramId(req.telegramUser!.id);
+            // const sub = await getSubscription(user.id);
 
-            if (!sub) {
-                res.json({ tier: 'free', expiresAt: null, maxLevels: 0 });
-                return;
-            }
+            // if (!sub) {
+            //     res.json({ tier: 'free', expiresAt: null, maxLevels: 0 });
+            //     return;
+            // }
 
-            // Check expiry
-            const now = new Date();
-            if (sub.expires_at && sub.expires_at < now) {
-                res.json({ tier: 'free', expiresAt: sub.expires_at, expired: true, maxLevels: 0 });
-                return;
-            }
+            // // Check expiry
+            // const now = new Date();
+            // if (sub.expires_at && sub.expires_at < now) {
+            //     res.json({ tier: 'free', expiresAt: sub.expires_at, expired: true, maxLevels: 0 });
+            //     return;
+            // }
 
-            const maxLevels = sub.tier === 'premium' ? 11 : sub.tier === 'standard' ? 3 : 0;
-            res.json({ tier: sub.tier, expiresAt: sub.expires_at, expired: false, maxLevels });
+            // const maxLevels = sub.tier === 'premium' ? 11 : sub.tier === 'standard' ? 3 : 0;
+            // res.json({ tier: sub.tier, expiresAt: sub.expires_at, expired: false, maxLevels });
+
+            // EVERYTHING IS FREE - ALWAYS PREMIUM
+            const farFuture = new Date();
+            farFuture.setFullYear(farFuture.getFullYear() + 10);
+            res.json({ tier: 'premium', expiresAt: farFuture, expired: false, maxLevels: 11 });
         } catch (err) {
             next(err);
         }

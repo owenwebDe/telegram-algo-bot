@@ -55,8 +55,48 @@ def fetch_data(terminal_path=None, expected_login=None):
                 "comment": p.comment
             })
 
-    # Get prices for symbols in positions + main symbols
-    symbols_to_check = list(set([p.symbol for p in positions] if positions else []) | {"EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"})
+    # Debug: list some symbols to stderr
+    all_symbols = mt5.symbols_get()
+    if all_symbols:
+        sys.stderr.write(f"DEBUG: Found {len(all_symbols)} total symbols\n")
+        # Log first 10 gold-like symbols if any
+        gold_finds = [s.name for s in all_symbols if "GOLD" in s.name.upper() or "XAU" in s.name.upper()]
+        sys.stderr.write(f"DEBUG: Gold-like symbols found: {gold_finds[:10]}\n")
+
+    # Auto-detect gold spot and future symbols
+    gold_spot = None
+    gold_future = None
+    visible_symbols = []
+    if all_symbols:
+        for s in all_symbols:
+            if s.visible:
+                visible_symbols.append(s.name)
+            
+            name = s.name.upper()
+            # First preference: ones already visible/in market watch
+            if not s.visible: continue
+            if (name == "XAUUSD" or name == "GOLD") and gold_spot is None:
+                gold_spot = s.name
+            elif ((name.startswith("XAUUSD") and name != "XAUUSD") or (name.startswith("GOLD") and name != "GOLD")) and gold_future is None:
+                gold_future = s.name
+        
+        # Second preference: search all if still missing
+        if gold_spot is None or gold_future is None:
+            for s in all_symbols:
+                name = s.name.upper()
+                if (name == "XAUUSD" or name == "GOLD") and gold_spot is None:
+                    gold_spot = s.name
+                    mt5.symbol_select(gold_spot, True)
+                elif ((name.startswith("XAUUSD") and name != "XAUUSD") or (name.startswith("GOLD") and name != "GOLD")) and gold_future is None:
+                    gold_future = s.name
+                    mt5.symbol_select(gold_future, True)
+
+    # Get prices for symbols in positions + main symbols + detected + visible
+    base_symbols = ["EURUSD", "GBPUSD", "XAUUSD", "XAUUSD.", "BTCUSD"]
+    if gold_spot: base_symbols.append(gold_spot)
+    if gold_future: base_symbols.append(gold_future)
+    
+    symbols_to_check = list(set([p.symbol for p in positions] if positions else []) | set(base_symbols) | set(visible_symbols))
     prices = {}
     for sym in symbols_to_check:
         tick = mt5.symbol_info_tick(sym)
@@ -66,9 +106,31 @@ def fetch_data(terminal_path=None, expected_login=None):
                 "ask": tick.ask,
                 "last": tick.last if tick.last != 0 else tick.bid
             }
+        else:
+            # Try to select it if it's in our base list/detected but failed to tick
+            if sym in base_symbols:
+                if mt5.symbol_select(sym, True):
+                    tick = mt5.symbol_info_tick(sym)
+                    if tick:
+                        prices[sym] = {
+                            "bid": tick.bid,
+                            "ask": tick.ask,
+                            "last": tick.last if tick.last != 0 else tick.bid
+                        }
+
+    # Terminal info (for Algo Trading status)
+    terminal_info = mt5.terminal_info()
+    trade_allowed = terminal_info.trade_allowed if terminal_info else False
 
     data = {
         "status": "success",
+        "terminal": {
+            "trade_allowed": trade_allowed
+        },
+        "gold_symbols": {
+            "spot": gold_spot,
+            "future": gold_future
+        },
         "account": {
             "login": account_info.login,
             "balance": account_info.balance,

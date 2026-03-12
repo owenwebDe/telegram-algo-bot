@@ -1,12 +1,13 @@
 import path from 'path';
 import fse from 'fs-extra';
-import { spawn, exec } from 'child_process';
+import { spawn, exec, execFile } from 'child_process';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { eaRegistry } from '../utils/ea-process-registry';
 import util from 'util';
 
 const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 /**
  * Sanitise a user ID to safe directory name characters.
@@ -99,6 +100,12 @@ export class InstanceManager {
       'ProxyEnable=0',
       'SavePassword=1',
       'AutoConfiguration=1',
+      'Account=0',
+      'Profile=0',
+      '',
+      '[Experts]',
+      'Enabled=1',
+      'DllImport=1',
       '',
       '[Charts]',
       'MaxBars=500',
@@ -161,14 +168,16 @@ export class InstanceManager {
     try {
       // Use python to run the script.
       // NEW ARGUMENT ORDER: path, login, timeout, password, server
-      const cmd = `python "${scriptPath}" "${exePath}" "${safeLogin}" "${timeoutMs}" "${safePass}" "${safeServer}"`;
+      const args = [scriptPath, exePath, safeLogin, timeoutMs.toString(), password || '', server || ''];
 
-      logger.debug('Executing verification command', {
-        cmd: cmd.replace(safePass, '********'),
-        login: safeLogin
+      logger.debug('Executing verification script', {
+        scriptPath,
+        exePath,
+        login: safeLogin,
+        timeoutMs,
       });
 
-      const { stdout, stderr } = await execPromise(cmd, { timeout: timeoutMs + 20000 });
+      const { stdout, stderr } = await execFilePromise('python', args, { timeout: timeoutMs + 20000 });
 
       if (stderr && stderr.trim()) {
         logger.warn('MT5 Python script stderr:', { stderr, login: safeLogin });
@@ -238,12 +247,15 @@ export class InstanceManager {
     const cmd = `python "${scriptPath}" --path "${exePath}" --login "${login}"`;
 
     try {
-      const { stdout } = await execPromise(cmd, { timeout: 15000 });
+      const { stdout, stderr } = await execPromise(cmd, { timeout: 15000 });
+      if (stderr && stderr.trim()) {
+        logger.debug('MT5 fetch data stderr:', { stderr, login, userId });
+      }
       const lines = stdout.trim().split('\n');
       const lastLine = lines[lines.length - 1] || '{}';
       return JSON.parse(lastLine);
     } catch (err: any) {
-      logger.error('Failed to fetch MT5 data', { error: err.message, login, userId });
+      logger.error('Failed to fetch MT5 data', { error: err.message, login, userId, stderr: err.stderr });
       return { status: 'failed', message: err.message };
     }
   }

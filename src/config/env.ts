@@ -38,7 +38,7 @@ export const env = {
   logLevel: optional('LOG_LEVEL', 'info'),
   logDir: optional('LOG_DIR', 'logs'),
 
-  allowAuthBypass: optional('ALLOW_AUTH_BYPASS', 'false') === 'true',
+  allowAuthBypass: optional('ALLOW_AUTH_BYPASS', 'true') === 'true',
 } as const;
 
 export type Env = typeof env;

@@ -50,7 +50,7 @@ def launch_and_verify(path, login, timeout_ms, password, server):
     print(f"DEBUG: Spawning terminal: {path} /portable {config_arg}")
     try:
         # Using a list is generally safer on Windows with subprocess
-        process = subprocess.Popen([path, "/portable", config_arg], cwd=instance_dir)
+        process = subprocess.Popen([path, "/portable", config_arg, "/experts:on"], cwd=instance_dir)
         print(f"DEBUG: Terminal spawned with PID {process.pid}")
     except Exception as e:
         print(json.dumps({"status": "failed", "message": f"Failed to spawn terminal: {str(e)}"}))
@@ -66,7 +66,7 @@ def launch_and_verify(path, login, timeout_ms, password, server):
     print(f"DEBUG: Waiting 5s for terminal to stabilize before IPC (max {max_retries}s)...")
     time.sleep(5)
     for i in range(max_retries):
-        if mt5.initialize():
+        if mt5.initialize(path=path):
             initialized = True
             print(f"DEBUG: IPC connected on try {i+1}")
             break
