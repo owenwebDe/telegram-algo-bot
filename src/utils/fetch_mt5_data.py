@@ -119,8 +119,8 @@ def fetch_data(terminal_path=None, expected_login=None):
                         }
 
     # Terminal info (for Algo Trading status)
-    terminal_info = mt5.terminal_info()
-    trade_allowed = terminal_info.trade_allowed if terminal_info else False
+    account_info = mt5.account_info()
+    trade_allowed = account_info.trade_allowed if account_info else False
 
     data = {
         "status": "success",

@@ -300,9 +300,17 @@ export class InstanceManager {
             eaRegistry.updateHeartbeat(userId, login, {
               spreadBuy: msg.spread_buy,
               spreadSell: msg.spread_sell,
+              spreadDir: msg.spread_dir,
               activeLevels: msg.active_levels,
               openPairs: msg.open_pairs,
               eaProfit: msg.ea_profit,
+              tick1: msg.tick1 || null,
+              tick2: msg.tick2 || null,
+              trade_allowed: msg.terminal_trade_allowed,
+              level_statuses: msg.level_statuses || [],
+              tracker: msg.tracker || { executed: 0, placed: 0 },
+              symbol1: msg.symbol1 || '',
+              symbol2: msg.symbol2 || '',
             });
           } else if (msg.type === 'fatal' || msg.type === 'stopped') {
             logger.warn('EA engine message', { userId, login, msg });

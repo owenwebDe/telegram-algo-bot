@@ -1035,6 +1035,14 @@
         <main class="content">
             <!-- TRADE VIEW -->
             <div id="tradeView" class="view active">
+                <!-- Algo Control Toggle -->
+                <div style="margin-bottom:12px; display:flex; justify-content:center">
+                    <button type="button" id="algoToggleBtn"
+                        style="width:100%; padding:14px; border-radius:14px; border:none; font-weight:800; font-size:15px; cursor:pointer; transition:all 0.3s ease; background:var(--accent); color:#000; touch-action:manipulation; z-index:10; position:relative;">
+                        ▶ Turn On Algo
+                    </button>
+                </div>
+
                 <div class="summary-card">
                     <div class="summary-label">Total Balance</div>
                     <div id="totalBalance" class="summary-value">$0.00</div>
@@ -1047,6 +1055,24 @@
                         <div class="stat-item">
                             <div class="label">P/L Today</div>
                             <div id="totalProfit" class="val p-up">+$0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Gold Prices -->
+                <div class="section-header">Gold Prices</div>
+                <div class="glass-card" style="padding:12px; margin-bottom:16px">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                        <div class="ea-stat-card" style="padding:10px">
+                            <div style="font-size:11px; color:var(--accent); font-weight:700" id="tradeGoldForexLabel">
+                                Forex Gold</div>
+                            <div id="tradeGoldForexPrice" style="font-size:18px; font-weight:800; margin-top:4px">—
+                            </div>
+                        </div>
+                        <div class="ea-stat-card" style="padding:10px">
+                            <div style="font-size:11px; color:var(--warning); font-weight:700" id="tradeGoldSpotLabel">
+                                Spot Gold</div>
+                            <div id="tradeGoldSpotPrice" style="font-size:18px; font-weight:800; margin-top:4px">—</div>
                         </div>
                     </div>
                 </div>
@@ -1073,169 +1099,217 @@
                     <div class="lock-icon">🔒</div>
                     <h3 style="margin-bottom:8px">Premium Feature</h3>
                     <p style="color:var(--text-dim);font-size:14px;margin-bottom:20px">
-                        Activate a subscription to access the Expert Advisor and start automated trading.
+                        Activate a subscription to access the Expert Advisor.
                     </p>
-                    <button onclick="document.getElementById('drawer').classList.add('active')"
-                        style="padding:14px 28px;background:var(--accent);color:#000;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">
-                        Activate Now
-                    </button>
                 </div>
 
-                <!-- EA Control Panel -->
-                <div id="expertPanel">
-                    <!-- Status + Action -->
+                <!-- ═══ ARBITRAGE MONITOR (Main Expert View) ═══ -->
+                <div id="expertMonitor">
+                    <!-- Header with Robot Settings Button -->
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;gap:10px">
-                            <h3 style="font-size:17px;font-weight:800">Expert Advisor</h3>
+                            <h3 style="font-size:17px;font-weight:800">Arbitrage Monitor</h3>
                             <span id="eaDirectionBadge"
                                 style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--accent-glow);color:var(--accent);font-weight:700;text-transform:uppercase">Buy
                                 Only</span>
                         </div>
-                        <span id="eaStatusChip" class="ea-status-chip stopped">⏹ Stopped</span>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <span id="eaStatusChip" class="ea-status-chip stopped">⏹ ALGO OFF</span>
+                            <button type="button" id="btnRobotConfig"
+                                style="background:none;border:1px solid var(--glass-border);border-radius:10px;padding:6px 10px;cursor:pointer;font-size:18px; touch-action:manipulation; position:relative; z-index:10;"
+                                title="Robot Settings">🤖</button>
+                        </div>
                     </div>
 
-                    <!-- Algo Warning -->
-                    <div id="algoWarning" class="hidden"
-                        style="background:rgba(255,165,2,0.1); border:1px solid var(--warning); border-radius:12px; padding:10px; margin-bottom:16px; font-size:12px; color:var(--warning); display:flex; align-items:center; gap:8px">
-                        <span>⚠️</span>
-                        <span><b>Algo Trading Disabled!</b> Enable it in your MT5 terminal for the EA to place
-                            trades.</span>
-                    </div>
 
-                    <!-- Live Stats -->
-                    <div class="ea-stat-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                        <div class="ea-stat-card" style="grid-column: span 2; padding: 12px 16px;">
-                            <div class="label" id="eaFormulaLabel"
-                                style="margin-bottom:4px; font-family:monospace; color:var(--accent); font-size:11px">
-                                Math:
-                                Sym1 Ask - Sym2 Bid</div>
-                            <div style="display:flex; justify-content:space-between; align-items:flex-end">
-                                <div>
-                                    <div class="label">Difference to Trade</div>
-                                    <div id="eaSpreadBuy" class="val" style="font-size:24px">—</div>
+                    <!-- ── Live Prices Section ── -->
+                    <div class="glass-card" style="padding:14px; margin-bottom:12px">
+                        <div style="font-size:11px; color:var(--text-dim); font-weight:700; margin-bottom:10px">LIVE
+                            PRICES</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                            <div class="ea-stat-card" style="padding:10px 14px">
+                                <div class="label" style="color:var(--accent); font-weight:700" id="labelSym1">Forex
+                                    Gold</div>
+                                <div style="margin-top:6px">
+                                    <div
+                                        style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px">
+                                        <span style="color:var(--text-dim)">Bid</span>
+                                        <span style="font-weight:700" id="eaBid1">—</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size:12px">
+                                        <span style="color:var(--text-dim)">Ask</span>
+                                        <span style="font-weight:700" id="eaAsk1">—</span>
+                                    </div>
                                 </div>
-                                <div style="text-align:right">
-                                    <div class="label">Difference to Close</div>
-                                    <div id="eaSpreadSell" class="val" style="color:var(--text-dim)">—</div>
+                            </div>
+                            <div class="ea-stat-card" style="padding:10px 14px">
+                                <div class="label" style="color:var(--warning); font-weight:700" id="labelSym2">Spot
+                                    Gold</div>
+                                <div style="margin-top:6px">
+                                    <div
+                                        style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px">
+                                        <span style="color:var(--text-dim)">Bid</span>
+                                        <span style="font-weight:700" id="eaBid2">—</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size:12px">
+                                        <span style="color:var(--text-dim)">Ask</span>
+                                        <span style="font-weight:700" id="eaAsk2">—</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="ea-stat-card" style="padding: 10px 14px;">
-                            <div class="label" id="labelSym1">Symbol 1</div>
-                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px">
-                                <span>A: <b id="eaAsk1">—</b></span>
-                                <span>B: <b id="eaBid1">—</b></span>
+                    <!-- ── Arbitrage Calculations ── -->
+                    <div class="glass-card" style="padding:14px; margin-bottom:12px">
+                        <div style="font-size:11px; color:var(--text-dim); font-weight:700; margin-bottom:10px">
+                            ARBITRAGE CALCULATIONS</div>
+                        <div id="eaFormulaLabel"
+                            style="font-family:monospace; color:var(--accent); font-size:10px; margin-bottom:10px">
+                            Math: Sym1 Ask - Sym2 Bid</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                            <div class="ea-stat-card" style="padding:12px; text-align:center">
+                                <div class="label">Difference to Open</div>
+                                <div id="eaSpreadBuy" class="val" style="font-size:28px; color:var(--accent)">—</div>
+                            </div>
+                            <div class="ea-stat-card" style="padding:12px; text-align:center">
+                                <div class="label">Difference to Close</div>
+                                <div id="eaSpreadSell" class="val" style="font-size:28px; color:var(--text-dim)">—</div>
                             </div>
                         </div>
-
-                        <div class="ea-stat-card" style="padding: 10px 14px;">
-                            <div class="label" id="labelSym2">Symbol 2</div>
-                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px">
-                                <span>A: <b id="eaAsk2">—</b></span>
-                                <span>B: <b id="eaBid2">—</b></span>
+                        <!-- Spread Direction -->
+                        <div style="text-align:center; margin-top:8px">
+                            <div id="spreadDirection"
+                                style="display:none; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; border:1px solid var(--glass-border); display:inline-flex; align-items:center; gap:4px">
+                                <span id="spreadDirIcon"></span> <span id="spreadDirText">STABLE</span>
                             </div>
                         </div>
-
-                        <div class="ea-stat-card" style="padding: 10px 14px;">
-                            <div class="label">Open Pairs</div>
-                            <div id="eaOpenPairs" class="val" style="font-size:16px">0</div>
-                        </div>
-                        <div class="ea-stat-card" style="padding: 10px 14px;">
-                            <div class="label">EA Profit</div>
-                            <div id="eaProfit" class="val p-up" style="font-size:16px">$0.00</div>
-                        </div>
                     </div>
 
-                    <!-- Start/Stop -->
-                    <div class="ea-action-row">
-                        <button class="btn-ea-start" onclick="eaStart()">▶ Start EA</button>
-                        <button class="btn-ea-stop" onclick="eaStop()">⏹ Stop EA</button>
-                    </div>
-
-                    <!-- General Settings -->
-                    <div class="settings-section">
-                        <h4>General Settings</h4>
-                        <div class="form-row">
-                            <label>Trade Direction</label>
-                            <select id="cfg_tradeType">
-                                <option value="buy">Buy Only</option>
-                                <option value="sell">Sell Only</option>
-                            </select>
+                    <!-- ── Trade Execution Tracker ── -->
+                    <div class="glass-card" style="padding:14px; margin-bottom:12px">
+                        <div style="display:flex; justify-content:space-between; align-items:center">
+                            <div>
+                                <div style="font-size:11px; color:var(--text-dim); font-weight:700">TRADE TRACKER</div>
+                                <div style="font-size:11px; color:var(--text-dim); margin-top:2px">Executed / Placed
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:baseline; gap:4px">
+                                <span id="trackerExecuted"
+                                    style="font-size:32px; font-weight:800; color:var(--accent)">0</span>
+                                <span style="font-size:18px; color:var(--text-dim)">/</span>
+                                <span id="trackerPlaced"
+                                    style="font-size:32px; font-weight:800; color:var(--text)">0</span>
+                            </div>
                         </div>
-                        <div class="form-row">
-                            <label>Symbol 1</label>
-                            <input type="text" id="cfg_symbol1" value="XAUUSD" />
-                        </div>
-                        <div class="form-row">
-                            <label>Symbol 2</label>
-                            <input type="text" id="cfg_symbol2" value="XAUUSD." />
-                        </div>
-                        <div class="form-row">
-                            <label>Lot Size</label>
-                            <input type="number" id="cfg_initialLot" value="0.1" step="0.01" min="0.01" />
-                        </div>
-                        <div class="form-row">
-                            <label>Magic Number</label>
-                            <input type="number" id="cfg_magicNo" value="12345" />
-                        </div>
-                        <div class="form-row">
-                            <label>Slippage (pips)</label>
-                            <input type="number" id="cfg_slippage" value="1" min="0" step="1" />
-                        </div>
-                        <div class="form-row">
-                            <label>Stop Loss (pips)</label>
-                            <input type="number" id="cfg_stopLoss" value="0" min="0" />
-                        </div>
-                        <div class="form-row">
-                            <label>Take Profit (pips)</label>
-                            <input type="number" id="cfg_takeProfit" value="0" min="0" />
-                        </div>
-                        <div class="form-row">
-                            <label>Open Sym First</label>
-                            <select id="cfg_symbolToTrade">
-                                <option value="Sym1">Symbol 1</option>
-                                <option value="Sym2">Symbol 2</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <label>Close Sym First</label>
-                            <select id="cfg_symbolToClose">
-                                <option value="Sym1">Symbol 1</option>
-                                <option value="Sym2">Symbol 2</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <label>Trade Same Level</label>
-                            <label class="toggle">
-                                <input type="checkbox" id="cfg_tradeOnSameLevel" />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Level Manager -->
-                    <div class="settings-section">
-                        <h4>Trade Levels <span
-                                style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"
-                                id="levelCountLabel">(0/11)</span></h4>
                         <div
-                            style="display:grid;grid-template-columns:30px 1fr 1fr 1fr 40px;gap:6px;padding:8px 0;border-bottom:1px solid var(--glass-border); align-items:center">
-                            <span style="font-size:10px;color:var(--text-dim);font-weight:700">LVL</span>
-                            <span style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">TRADE
-                                DIFF</span>
-                            <span style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">CLOSE
-                                DIFF</span>
-                            <span
-                                style="font-size:10px;color:var(--text-dim);text-align:center;font-weight:700">PAIRS</span>
-                            <span></span>
+                            style="display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
+                            <div>
+                                <div class="label">EA Profit</div>
+                                <div id="eaProfit" class="val p-up" style="font-size:18px">+$0.00</div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="label">Open Pairs</div>
+                                <div id="eaOpenPairs" class="val" style="font-size:18px">0</div>
+                            </div>
                         </div>
-                        <div id="levelsContainer"></div>
-                        <button class="btn-add-level" onclick="addLevel()">+ Add Level</button>
                     </div>
 
-                    <button class="btn-save-config" onclick="saveConfig()">💾 Save Configuration</button>
+                    <!-- ── Trade Level Tracking ── -->
+                    <div class="glass-card" style="padding:14px; margin-bottom:12px">
+                        <div style="font-size:11px; color:var(--text-dim); font-weight:700; margin-bottom:10px">LEVEL
+                            TRACKING</div>
+                        <div id="levelTrackingCards">
+                            <div style="text-align:center; color:var(--text-dim); padding:16px; font-size:13px">
+                                Start the Algo to see level statuses
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- ═══ ROBOT CONFIGURATION PAGE ═══ -->
+            <div id="robotConfigView" class="view">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <button type="button" id="btnRobotConfigBack"
+                            style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:10px; touch-action:manipulation; position:relative; z-index:10;">←</button>
+                        <h3 style="font-size:17px;font-weight:800">🤖 Robot Configuration</h3>
+                    </div>
+                </div>
+
+                <!-- General Settings -->
+                <div class="settings-section">
+                    <h4>General Settings</h4>
+                    <div class="form-row">
+                        <label>Trade Direction</label>
+                        <select id="cfg_tradeType">
+                            <option value="buy">Buy Only</option>
+                            <option value="sell">Sell Only</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Symbol 1 (Forex Gold)</label>
+                        <input type="text" id="cfg_symbol1" value="XAUUSD" />
+                    </div>
+                    <div class="form-row">
+                        <label>Symbol 2 (Spot Gold)</label>
+                        <input type="text" id="cfg_symbol2" value="XAUUSD." />
+                    </div>
+                    <div class="form-row">
+                        <label>Max Active Trades</label>
+                        <input type="number" id="cfg_maxActiveTrades" value="5" min="1" step="1" />
+                    </div>
+                    <div class="form-row">
+                        <label>Slippage (pips)</label>
+                        <input type="number" id="cfg_slippage" value="1" min="0" step="1" />
+                    </div>
+                    <div class="form-row">
+                        <label>Stop Loss (pips)</label>
+                        <input type="number" id="cfg_stopLoss" value="0" min="0" />
+                    </div>
+                    <div class="form-row">
+                        <label>Take Profit (pips)</label>
+                        <input type="number" id="cfg_takeProfit" value="0" min="0" />
+                    </div>
+                    <div class="form-row" style="display:none">
+                        <label>Magic No</label>
+                        <input type="number" id="cfg_magicNo" value="12345" />
+                    </div>
+                    <div class="form-row" style="display:none">
+                        <label>Open Sym First</label>
+                        <select id="cfg_symbolToTrade">
+                            <option value="Sym1">Symbol 1</option>
+                            <option value="Sym2">Symbol 2</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="display:none">
+                        <label>Close Sym First</label>
+                        <select id="cfg_symbolToClose">
+                            <option value="Sym1">Symbol 1</option>
+                            <option value="Sym2">Symbol 2</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="display:none">
+                        <label>Trade Same Level</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="cfg_tradeOnSameLevel" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Level Manager -->
+                <div class="settings-section">
+                    <h4>Trade Levels <span
+                            style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"
+                            id="levelCountLabel">(0/11)</span></h4>
+                    <div id="levelsContainer" style="margin-top:12px"></div>
+                    <button type="button" class="btn-add-level" onclick="addLevel()">+ Add Level</button>
+                </div>
+
+                <button type="button" class="btn-save-config" onclick="saveConfig()">💾 Save Configuration</button>
+                <div style="height:80px"></div>
             </div>
 
             <!-- HISTORY VIEW -->
@@ -1407,6 +1481,22 @@
         document.getElementById('sidebarTrigger').addEventListener('click', function () { drawer.classList.add('active'); });
         drawer.addEventListener('click', function (e) { if (e.target === drawer) drawer.classList.remove('active'); });
 
+        /* ── Explicit Mobile Event Bindings ── */
+        function bindClick(id, fn) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', function (e) {
+                    e.preventDefault(); // Stop bubbling/submitting
+                    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                    fn();
+                });
+            }
+        }
+
+        bindClick('algoToggleBtn', toggleAlgo);
+        bindClick('btnRobotConfig', showRobotConfig);
+        bindClick('btnRobotConfigBack', hideRobotConfig);
+
         /* ── Authentication ────────────────────────────────────────────── */
         document.getElementById('connectBtn').addEventListener('click', function () {
             var loginVal = document.getElementById('login').value.trim();
@@ -1483,6 +1573,9 @@
 
             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
+            // Always poll EA status so the UI shows active tracker & prices
+            startEaPolling();
+
             // Start data polling
             startDataPolling(login);
         }
@@ -1492,7 +1585,7 @@
             // Clear existing if any
             if (dataTimer) clearInterval(dataTimer);
             fetchData(login);
-            dataTimer = setInterval(function () { fetchData(login); }, 3000);
+            dataTimer = setInterval(function () { fetchData(login); }, 500);
         }
 
         function fetchData(login) {
@@ -1546,28 +1639,59 @@
                         '</div>' +
                         '</div>' +
                         '<div class="trade-profit">' +
-                        '<div class="profit-val ' + (p.profit >= 0 ? 'p-up' : 'p-down') + '">' + (p.profit >= 0 ? '+' : '') + p.profit.toFixed(2) + '</div>' +
-                        '<div class="price">' + p.price_open.toFixed(5) + ' → ' + p.price_current.toFixed(5) + '</div>' +
+                        '<div class="profit-val ' + (p.profit >= 0 ? 'p-up' : 'p-down') + '">' + (p.profit >= 0 ? '+$' : '-$') + Math.abs(p.profit).toFixed(2) + '</div>' +
+                        '<div class="price">Entry: ' + p.price_open.toFixed(2) + ' → ' + p.price_current.toFixed(2) + '</div>' +
                         '</div>' +
                         '</div>';
                 }
                 list.innerHTML = html;
             }
 
-            // Market Watch
+            // Market Watch — Gold first, others below
             var watch = document.getElementById('marketWatch');
             var watchHtml = '';
             var syms = Object.keys(data.prices);
+            var goldPatterns = ['XAUUSD', 'GOLD', 'XAU'];
+            var goldSyms = [];
+            var otherSyms = [];
             for (var s = 0; s < syms.length; s++) {
-                var symbol = syms[s];
+                var sym = syms[s].toUpperCase();
+                var isGold = false;
+                for (var g = 0; g < goldPatterns.length; g++) {
+                    if (sym.indexOf(goldPatterns[g]) !== -1) { isGold = true; break; }
+                }
+                if (isGold) goldSyms.push(syms[s]); else otherSyms.push(syms[s]);
+            }
+
+            // Update Trade Page Gold prices from first two gold symbols
+            if (goldSyms.length > 0) {
+                var t1 = data.prices[goldSyms[0]];
+                document.getElementById('tradeGoldForexLabel').textContent = goldSyms[0];
+                document.getElementById('tradeGoldForexPrice').textContent = t1.bid.toFixed(2) + ' / ' + t1.ask.toFixed(2);
+            }
+            if (goldSyms.length > 1) {
+                var t2 = data.prices[goldSyms[1]];
+                document.getElementById('tradeGoldSpotLabel').textContent = goldSyms[1];
+                document.getElementById('tradeGoldSpotPrice').textContent = t2.bid.toFixed(2) + ' / ' + t2.ask.toFixed(2);
+            }
+
+            // Render Gold symbols first
+            var allSorted = goldSyms.concat(otherSyms);
+            for (var si = 0; si < allSorted.length; si++) {
+                var symbol = allSorted[si];
                 var tick = data.prices[symbol];
+                var isGoldSym = si < goldSyms.length;
                 watchHtml += '<div class="price-row">' +
-                    '<div class="price-name">' + symbol + '</div>' +
+                    '<div class="price-name"' + (isGoldSym ? ' style="color:var(--accent);font-weight:700"' : '') + '>' + (isGoldSym ? '🥇 ' : '') + symbol + '</div>' +
                     '<div class="price-vals">' +
-                    '<div class="price-chip">' + tick.bid.toFixed(5) + '</div>' +
-                    '<div class="price-chip">' + tick.ask.toFixed(5) + '</div>' +
+                    '<div class="price-chip">' + tick.bid.toFixed(2) + '</div>' +
+                    '<div class="price-chip">' + tick.ask.toFixed(2) + '</div>' +
                     '</div>' +
                     '</div>';
+                // Add divider after gold symbols
+                if (isGoldSym && si === goldSyms.length - 1 && otherSyms.length > 0) {
+                    watchHtml += '<div style="border-bottom:1px solid var(--glass-border); margin:4px 0"></div>';
+                }
             }
             watch.innerHTML = watchHtml;
         }
@@ -1602,13 +1726,35 @@
             var html = '';
             for (var i = 0; i < levels.length; i++) {
                 var lv = levels[i];
-                html += '<div class="level-row" id="lrow' + i + '">' +
-                    '<span class="level-label">L' + (i + 1) + '</span>' +
-                    '<input type="number" step="0.01" placeholder="Entry" value="' + (lv.diffToTrade || '') + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" />' +
-                    '<input type="number" step="0.01" placeholder="Exit" value="' + (lv.diffToCut || '') + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" />' +
-                    '<input type="number" step="1" placeholder="Pairs" value="' + (lv.numPairs || '') + '" onchange="levels[' + i + '].numPairs=parseInt(this.value)" />' +
-                    '<button class="btn-del-level" onclick="delLevel(' + i + ')">✕</button>' +
-                    '</div>';
+                var levelNum = i + 1;
+
+                html += '<div class="level-card" style="margin-bottom:12px; padding:12px; background:var(--layer-2); border-radius:12px; border:1px solid var(--glass-border)">';
+                html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">';
+                html += '<span style="font-weight:700; color:var(--accent)">LEVEL ' + levelNum + '</span>';
+                if (levelNum > 1) {
+                    html += '<button class="btn-del-level" onclick="delLevel(' + i + ')" style="background:none; border:none; color:var(--danger); cursor:pointer">✕ Remove</button>';
+                }
+                html += '</div>';
+
+                // Specialized fields for Level 1
+                if (levelNum === 1) {
+                    html += '<div class="form-row"><label>Lot Size</label><input type="number" step="0.01" value="' + (lv.initialLot || 0.1) + '" onchange="levels[' + i + '].initialLot=parseFloat(this.value)" /></div>';
+                }
+
+                html += '<div class="form-row"><label>Number of Pairs</label><input type="number" step="1" value="' + (lv.numPairs || 1) + '" onchange="levels[' + i + '].numPairs=parseInt(this.value)" /></div>';
+
+                // Specialized fields for Level 3
+                if (levelNum === 3) {
+                    html += '<div class="form-row"><label>Trade Diff 1</label><input type="number" step="0.01" value="' + (lv.diffToTrade || 0) + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" /></div>';
+                    html += '<div class="form-row"><label>Cut Diff 1</label><input type="number" step="0.01" value="' + (lv.diffToCut || 0) + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" /></div>';
+                    html += '<div class="form-row" style="margin-top:8px; border-top:1px solid var(--glass-border); padding-top:8px"><label>Trade Diff 2</label><input type="number" step="0.01" value="' + (lv.diffToTrade2 || 0) + '" onchange="levels[' + i + '].diffToTrade2=parseFloat(this.value)" /></div>';
+                    html += '<div class="form-row"><label>Cut Diff 2</label><input type="number" step="0.01" value="' + (lv.diffToCut2 || 0) + '" onchange="levels[' + i + '].diffToCut2=parseFloat(this.value)" /></div>';
+                } else {
+                    html += '<div class="form-row"><label>Difference to Trade</label><input type="number" step="0.01" value="' + (lv.diffToTrade || 0) + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" /></div>';
+                    html += '<div class="form-row"><label>Difference to Cut</label><input type="number" step="0.01" value="' + (lv.diffToCut || 0) + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" /></div>';
+                }
+
+                html += '</div>';
             }
             container.innerHTML = html;
         }
@@ -1629,16 +1775,22 @@
                 tradeType: document.getElementById('cfg_tradeType').value,
                 symbol1: document.getElementById('cfg_symbol1').value.trim(),
                 symbol2: document.getElementById('cfg_symbol2').value.trim(),
-                initialLot: parseFloat(document.getElementById('cfg_initialLot').value) || 0.1,
                 magicNo: parseInt(document.getElementById('cfg_magicNo').value) || 12345,
                 slippage: parseFloat(document.getElementById('cfg_slippage').value) || 1,
                 stopLoss: parseFloat(document.getElementById('cfg_stopLoss').value) || 0,
                 takeProfit: parseFloat(document.getElementById('cfg_takeProfit').value) || 0,
                 symbolToTrade: document.getElementById('cfg_symbolToTrade').value,
                 symbolToClose: document.getElementById('cfg_symbolToClose').value,
+                maxActiveTrades: parseInt(document.getElementById('cfg_maxActiveTrades').value) || 5,
                 tradeOnSameLevel: document.getElementById('cfg_tradeOnSameLevel').checked,
                 levels: levels
             };
+            // Ensure Level 1 initialLot is treated as the master initialLot
+            if (levels.length > 0) {
+                cfg.initialLot = levels[0].initialLot || 0.1;
+            } else {
+                cfg.initialLot = 0.1;
+            }
             return cfg;
         }
 
@@ -1647,15 +1799,19 @@
             document.getElementById('cfg_tradeType').value = cfg.tradeType || 'buy';
             document.getElementById('cfg_symbol1').value = cfg.symbol1 || 'XAUUSD';
             document.getElementById('cfg_symbol2').value = cfg.symbol2 || 'XAUUSD.';
-            document.getElementById('cfg_initialLot').value = cfg.initialLot || 0.1;
             document.getElementById('cfg_magicNo').value = cfg.magicNo || 12345;
             document.getElementById('cfg_slippage').value = cfg.slippage || 1;
             document.getElementById('cfg_stopLoss').value = cfg.stopLoss || 0;
             document.getElementById('cfg_takeProfit').value = cfg.takeProfit || 0;
             document.getElementById('cfg_symbolToTrade').value = cfg.symbolToTrade || 'Sym1';
             document.getElementById('cfg_symbolToClose').value = cfg.symbolToClose || 'Sym1';
+            document.getElementById('cfg_maxActiveTrades').value = cfg.maxActiveTrades || 5;
             document.getElementById('cfg_tradeOnSameLevel').checked = cfg.tradeOnSameLevel || false;
             levels = Array.isArray(cfg.levels) ? cfg.levels : [];
+            // Backfill Level 1 lot size from old global if missing
+            if (levels.length > 0 && !levels[0].initialLot) {
+                levels[0].initialLot = cfg.initialLot || 0.1;
+            }
             renderLevels();
             if (cfg.isRunning) updateEaStatus({ running: true });
         }
@@ -1683,14 +1839,49 @@
                     }
                 }).catch(function (e) { alert('Save failed: ' + e.message); });
         }
+        /* ── Robot Config Navigation ─────────────────────────────────── */
+        function showRobotConfig() {
+            document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+            var config = document.getElementById('robotConfigView');
+            if (config) config.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function hideRobotConfig() {
+            document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+            var expert = document.getElementById('expertView');
+            if (expert) expert.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        /* ── Algo Toggle (Trade Page) ─────────────────────────────────── */
+        var algoRunning = false;
+
+        function toggleAlgo() {
+            if (algoRunning) {
+                eaStop();
+            } else {
+                eaStart();
+            }
+        }
+
+        function updateAlgoToggleBtn(running) {
+            algoRunning = running;
+            var btn = document.getElementById('algoToggleBtn');
+            if (!btn) return;
+            if (running) {
+                btn.textContent = '⏹ Turn Off Algo';
+                btn.style.background = 'var(--danger)';
+                btn.style.color = '#fff';
+            } else {
+                btn.textContent = '▶ Turn On Algo';
+                btn.style.background = 'var(--accent)';
+                btn.style.color = '#000';
+            }
+        }
 
         /* ── EA Start / Stop ──────────────────────────────────────────── */
         function eaStart() {
-            if (subTier === 'free') {
-                alert('Please activate a subscription to start the EA.');
-                document.getElementById('drawer').classList.add('active');
-                return;
-            }
             var initData = tg ? tg.initData : '';
             fetch(API + '/api/ea/start/' + currentLogin, {
                 method: 'POST',
@@ -1725,10 +1916,12 @@
             // Running State
             if (d.running) {
                 chip.className = 'ea-status-chip running';
-                chip.textContent = '● Running';
+                chip.textContent = '● ALGO ACTIVE';
+                updateAlgoToggleBtn(true);
             } else {
                 chip.className = 'ea-status-chip stopped';
-                chip.textContent = '⏹ Stopped';
+                chip.textContent = '⏹ ALGO OFF';
+                updateAlgoToggleBtn(false);
             }
 
             // Direction & Formula
@@ -1751,15 +1944,56 @@
                 document.getElementById('eaSpreadSell').textContent = d.spreadSell.toFixed(2);
             }
 
-            // Symbol Prices
-            if (d.ask1) document.getElementById('eaAsk1').textContent = d.ask1.toFixed(d.digits1 || 2);
-            if (d.bid1) document.getElementById('eaBid1').textContent = d.bid1.toFixed(d.digits1 || 2);
-            if (d.ask2) document.getElementById('eaAsk2').textContent = d.ask2.toFixed(d.digits2 || 2);
-            if (d.bid2) document.getElementById('eaBid2').textContent = d.bid2.toFixed(d.digits2 || 2);
+            // Symbol Prices — from tick data
+            if (d.tick1) {
+                document.getElementById('eaBid1').textContent = d.tick1.bid.toFixed(2);
+                document.getElementById('eaAsk1').textContent = d.tick1.ask.toFixed(2);
+            } else {
+                if (d.ask1) document.getElementById('eaAsk1').textContent = d.ask1.toFixed(d.digits1 || 2);
+                if (d.bid1) document.getElementById('eaBid1').textContent = d.bid1.toFixed(d.digits1 || 2);
+            }
+            if (d.tick2) {
+                document.getElementById('eaBid2').textContent = d.tick2.bid.toFixed(2);
+                document.getElementById('eaAsk2').textContent = d.tick2.ask.toFixed(2);
+            } else {
+                if (d.ask2) document.getElementById('eaAsk2').textContent = d.ask2.toFixed(d.digits2 || 2);
+                if (d.bid2) document.getElementById('eaBid2').textContent = d.bid2.toFixed(d.digits2 || 2);
+            }
 
             // Labels
             if (d.symbol1) document.getElementById('labelSym1').textContent = d.symbol1;
             if (d.symbol2) document.getElementById('labelSym2').textContent = d.symbol2;
+
+            // Trade Tracker
+            if (d.tracker) {
+                var te = document.getElementById('trackerExecuted');
+                var tp = document.getElementById('trackerPlaced');
+                if (te) te.textContent = d.tracker.executed;
+                if (tp) tp.textContent = d.tracker.placed;
+            }
+
+            // Level Tracking Cards
+            if (d.level_statuses && d.level_statuses.length > 0) {
+                var ltc = document.getElementById('levelTrackingCards');
+                if (ltc) {
+                    var lhtml = '';
+                    for (var li = 0; li < d.level_statuses.length; li++) {
+                        var ls = d.level_statuses[li];
+                        var statusColor = ls.status === 'Trade Opened' ? 'var(--success)' : 'var(--text-dim)';
+                        var statusIcon = ls.status === 'Trade Opened' ? '🟢' : '⏳';
+                        lhtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--glass-border)">' +
+                            '<div>' +
+                            '<span style="font-weight:700; color:var(--accent)">Level ' + ls.level + '</span>' +
+                            '</div>' +
+                            '<div style="display:flex; align-items:center; gap:8px">' +
+                            '<span style="font-size:12px; color:var(--text-dim)">Diff: ' + ls.difference.toFixed(2) + '</span>' +
+                            '<span style="font-size:12px; color:' + statusColor + '; font-weight:700">' + statusIcon + ' ' + ls.status + '</span>' +
+                            '</div>' +
+                            '</div>';
+                    }
+                    ltc.innerHTML = lhtml;
+                }
+            }
 
             // Stats
             if (d.openPairs !== undefined) document.getElementById('eaOpenPairs').textContent = d.openPairs;
@@ -1769,12 +2003,7 @@
                 pEl.className = 'val ' + (d.eaProfit >= 0 ? 'p-up' : 'p-down');
             }
 
-            // Algo Warning
-            var warn = document.getElementById('algoWarning');
-            if (warn) {
-                if (d.running && d.trade_allowed === false) warn.classList.remove('hidden');
-                else warn.classList.add('hidden');
-            }
+            // Algo Warning removed per user request
         }
 
         function startEaPolling() {
@@ -1785,7 +2014,7 @@
                     .then(function (r) { return r.json(); })
                     .then(function (d) { updateEaStatus(d); })
                     .catch(function () { });
-            }, 2000);
+            }, 500);
         }
 
         function stopEaPolling() {
@@ -1812,14 +2041,16 @@
 
         function applySubscriptionGate() {
             var lock = document.getElementById('expertLock');
-            var panel = document.getElementById('expertPanel');
-            if (!lock || !panel) return;
+            var monitor = document.getElementById('expertMonitor');
+            var configView = document.getElementById('robotConfigView');
+            if (!lock || !monitor) return;
             if (subTier === 'free') {
                 lock.classList.remove('hidden');
-                panel.style.display = 'none';
+                monitor.style.display = 'none';
+                if (configView) configView.style.display = 'none';
             } else {
                 lock.classList.add('hidden');
-                panel.style.display = 'block';
+                monitor.style.display = 'block';
             }
         }
 

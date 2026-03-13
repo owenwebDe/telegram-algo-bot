@@ -10,9 +10,17 @@ export interface EaRecord {
     lastHeartbeat?: {
         spreadBuy: number;
         spreadSell: number;
-        activeLevels: number[];
+        spreadDir: string;
+        activeLevels: string[];
         openPairs: number;
         eaProfit: number;
+        tick1: { bid: number; ask: number } | null;
+        tick2: { bid: number; ask: number } | null;
+        trade_allowed: boolean;
+        level_statuses: any[];
+        tracker: { executed: number; placed: number };
+        symbol1: string;
+        symbol2: string;
     };
 }
 

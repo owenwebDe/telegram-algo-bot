@@ -3,3 +3,5 @@ dist/
 logs/
 .env
 *.log
+check_mt5_status.py
+__pycache__/
