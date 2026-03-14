@@ -1689,16 +1689,18 @@
                 if (isGold) goldSyms.push(syms[s]); else otherSyms.push(syms[s]);
             }
 
-            // Update Trade Page Gold prices from first two gold symbols
-            if (goldSyms.length > 0) {
-                var t1 = data.prices[goldSyms[0]];
-                document.getElementById('tradeGoldForexLabel').textContent = goldSyms[0];
-                document.getElementById('tradeGoldForexPrice').textContent = t1.bid.toFixed(2) + ' / ' + t1.ask.toFixed(2);
-            }
-            if (goldSyms.length > 1) {
-                var t2 = data.prices[goldSyms[1]];
-                document.getElementById('tradeGoldSpotLabel').textContent = goldSyms[1];
-                document.getElementById('tradeGoldSpotPrice').textContent = t2.bid.toFixed(2) + ' / ' + t2.ask.toFixed(2);
+            // Update Trade Page Gold prices from explicit backend detection
+            if (data.gold_symbols) {
+                if (data.gold_symbols.future && data.prices[data.gold_symbols.future]) {
+                    var t1 = data.prices[data.gold_symbols.future];
+                    document.getElementById('tradeGoldForexLabel').textContent = 'Gold Futures (' + data.gold_symbols.future + ')';
+                    document.getElementById('tradeGoldForexPrice').textContent = t1.bid.toFixed(2) + ' / ' + t1.ask.toFixed(2);
+                }
+                if (data.gold_symbols.spot && data.prices[data.gold_symbols.spot]) {
+                    var t2 = data.prices[data.gold_symbols.spot];
+                    document.getElementById('tradeGoldSpotLabel').textContent = 'Gold Spot (' + data.gold_symbols.spot + ')';
+                    document.getElementById('tradeGoldSpotPrice').textContent = t2.bid.toFixed(2) + ' / ' + t2.ask.toFixed(2);
+                }
             }
 
             // Render Gold symbols first
@@ -2002,8 +2004,8 @@
             }
 
             // Labels
-            if (d.symbol1) document.getElementById('labelSym1').textContent = d.symbol1;
-            if (d.symbol2) document.getElementById('labelSym2').textContent = d.symbol2;
+            if (d.symbol1) document.getElementById('labelSym1').textContent = 'Gold Futures (' + d.symbol1 + ')';
+            if (d.symbol2) document.getElementById('labelSym2').textContent = 'Gold Spot (' + d.symbol2 + ')';
 
             // Trade Tracker
             if (d.tracker) {
@@ -2064,6 +2066,36 @@
                 var pEl = document.getElementById('eaProfit');
                 pEl.textContent = (d.eaProfit >= 0 ? '+' : '') + '$' + d.eaProfit.toFixed(2);
                 pEl.className = 'val ' + (d.eaProfit >= 0 ? 'p-up' : 'p-down');
+            }
+
+            // Sync account data to Trade Dashboard if available from EA Engine
+            if (d.account) {
+                var tb = document.getElementById('totalBalance');
+                var te = document.getElementById('totalEquity');
+                var profDiv = document.getElementById('totalProfit');
+
+                if (tb) tb.textContent = '$' + d.account.balance.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                if (te) te.textContent = '$' + d.account.equity.toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+                if (profDiv) {
+                    var pVal = d.account.equity - d.account.balance;
+                    profDiv.textContent = (pVal >= 0 ? '+' : '') + '$' + pVal.toFixed(2);
+                    profDiv.className = 'val ' + (pVal >= 0 ? 'p-up' : 'p-down');
+                }
+            }
+
+            // Sync trade page gold prices from EA
+            if (d.symbol1 && d.tick1) {
+                var l1 = document.getElementById('tradeGoldForexLabel');
+                var p1 = document.getElementById('tradeGoldForexPrice');
+                if (l1) l1.textContent = d.symbol1;
+                if (p1) p1.textContent = d.tick1.bid.toFixed(2) + ' / ' + d.tick1.ask.toFixed(2);
+            }
+            if (d.symbol2 && d.tick2) {
+                var l2 = document.getElementById('tradeGoldSpotLabel');
+                var p2 = document.getElementById('tradeGoldSpotPrice');
+                if (l2) l2.textContent = d.symbol2;
+                if (p2) p2.textContent = d.tick2.bid.toFixed(2) + ' / ' + d.tick2.ask.toFixed(2);
             }
 
             // Algo Warning removed per user request

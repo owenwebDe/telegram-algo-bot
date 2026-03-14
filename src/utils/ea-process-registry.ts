@@ -23,6 +23,7 @@ export interface EaRecord {
         symbol1: string;
         symbol2: string;
         logs: { time: string; type: string; msg: string; latency_ms?: number }[];
+        account?: { balance: number; equity: number; margin: number; free_margin: number; margin_level: number; };
     };
 }
 

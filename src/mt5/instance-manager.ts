@@ -309,6 +309,7 @@ export class InstanceManager {
               trade_allowed: msg.terminal_trade_allowed,
               level_statuses: msg.level_statuses || [],
               tracker: msg.tracker || { executed: 0, placed: 0 },
+              account: msg.account,
               active_trades: msg.active_trades || [],
               symbol1: msg.symbol1 || '',
               symbol2: msg.symbol2 || '',
