@@ -12,6 +12,9 @@ import { logger } from '../../config/logger';
 
 const router = Router();
 
+// In-memory cache for placed count - avoids DB query on every 500ms EA status poll
+const placedCache = new Map<string, { val: number; ts: number }>();
+
 /**
  * GET /api/ea/config/:login
  * Returns saved EA configuration for the account.
@@ -101,6 +104,20 @@ router.post(
             });
 
             res.json({ ok: true, login, updatedAt: saved.updated_at });
+
+            // Auto-restart EA if it's currently running so it picks up the new config
+            const rec = eaRegistry.get(user.id.toString(), login);
+            if (rec && rec.status === 'running') {
+                logger.info('Config saved while EA running — auto-restarting', { userId: user.id, login });
+                instanceManager.stopEaEngine(user.id.toString(), login);
+                setTimeout(async () => {
+                    try {
+                        await instanceManager.startEaEngine(user.id.toString(), login);
+                    } catch (e: any) {
+                        logger.error('Auto-restart failed', { error: e.message });
+                    }
+                }, 3000);
+            }
         } catch (err) {
             next(err);
         }
@@ -202,14 +219,48 @@ router.get(
             const user = await upsertUserByTelegramId(req.telegramUser!.id);
             const rec = eaRegistry.get(user.id.toString(), login);
 
+            // Use cached 'placed' count to avoid hammering DB on every 500ms poll
+            const cacheKey = `${user.id}_${login}`;
+            const cached = placedCache.get(cacheKey);
+            let placedFromConfig = 0;
+            if (cached && (Date.now() - cached.ts < 10000)) {
+                placedFromConfig = cached.val;
+            } else {
+                try {
+                    const config = await getEaConfig(user.id, login);
+                    const levels: any[] = config?.levels || [];
+                    for (const lvl of levels) {
+                        const np = parseInt(lvl.numPairs || '0', 10);
+                        if (np > 0 && (parseFloat(lvl.diffToTrade || '0') !== 0)) {
+                            placedFromConfig += np;
+                        }
+                    }
+                } catch { /* DB error — use 0 */ }
+                placedCache.set(cacheKey, { val: placedFromConfig, ts: Date.now() });
+            }
+
             if (!rec) {
-                res.json({ running: false, spreadBuy: null, spreadSell: null, activeLevels: [], openPairs: 0, eaProfit: 0 });
+                res.json({
+                    running: false,
+                    spreadBuy: null,
+                    spreadSell: null,
+                    activeLevels: [],
+                    openPairs: 0,
+                    eaProfit: 0,
+                    tracker: { executed: 0, placed: placedFromConfig },
+                    active_trades: [],
+                    level_statuses: [],
+                });
                 return;
             }
 
+            const hb = rec.lastHeartbeat;
+            const liveExecuted = hb?.tracker?.executed ?? 0;
+
             res.json({
                 running: rec.status === 'running',
-                ...(rec.lastHeartbeat ?? { spreadBuy: null, spreadSell: null, activeLevels: [], openPairs: 0, eaProfit: 0 }),
+                ...(hb ?? { spreadBuy: null, spreadSell: null, activeLevels: [], openPairs: 0, eaProfit: 0 }),
+                tracker: { executed: liveExecuted, placed: placedFromConfig },
             });
         } catch (err) {
             next(err);

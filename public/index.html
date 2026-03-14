@@ -1225,6 +1225,17 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- ── Live EA Terminal Logs ── -->
+                    <div class="glass-card" style="padding:14px; margin-bottom:20px">
+                        <div style="font-size:11px; color:var(--text-dim); font-weight:700; margin-bottom:10px">LIVE EA
+                            LOGS</div>
+                        <div id="eaLogsTerminal"
+                            style="background:#0a0a0a; border:1px solid #333; border-radius:8px; height:180px; padding:10px; overflow-y:auto; font-family:monospace; font-size:11px; line-height:1.4">
+                            <div style="color:var(--text-dim); text-align:center; margin-top:70px">Waiting for EA
+                                data...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1238,9 +1249,30 @@
                     </div>
                 </div>
 
-                <!-- General Settings -->
+                <!-- Level Manager -->
                 <div class="settings-section">
-                    <h4>General Settings</h4>
+                    <h4>Trade Levels</h4>
+                    <div id="levelsContainer" style="margin-top:12px"></div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:16px; padding-bottom:80px">
+                    <button type="button" onclick="hideRobotConfig()"
+                        style="flex:1; padding:14px; border-radius:12px; border:1px solid var(--glass-border); background:var(--surface); color:var(--text); font-size:14px; font-weight:700; cursor:pointer">Cancel</button>
+                    <button type="button" onclick="saveConfigAndReturn()"
+                        style="flex:1; padding:14px; border-radius:12px; border:none; background:var(--accent); color:#000; font-size:14px; font-weight:700; cursor:pointer">OK</button>
+                </div>
+            </div>
+
+            <!-- ═══ GENERAL SETTINGS PAGE ═══ -->
+            <div id="generalSettingsView" class="view">
+                <div style="display:flex;align-items:center;margin-bottom:16px;gap:10px">
+                    <button type="button" id="btnGeneralSettingsBack"
+                        style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:10px; z-index:10;">←</button>
+                    <h3 style="font-size:17px;font-weight:800">⚙️ General Settings</h3>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Core Defaults</h4>
                     <div class="form-row">
                         <label>Trade Direction</label>
                         <select id="cfg_tradeType">
@@ -1297,15 +1329,6 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                </div>
-
-                <!-- Level Manager -->
-                <div class="settings-section">
-                    <h4>Trade Levels <span
-                            style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"
-                            id="levelCountLabel">(0/11)</span></h4>
-                    <div id="levelsContainer" style="margin-top:12px"></div>
-                    <button type="button" class="btn-add-level" onclick="addLevel()">+ Add Level</button>
                 </div>
 
                 <button type="button" class="btn-save-config" onclick="saveConfig()">💾 Save Configuration</button>
@@ -1371,6 +1394,7 @@
                 <p id="activationMsg" style="font-size:11px;color:var(--text-dim);margin-top:4px"></p>
             </div>
 
+            <div class="drawer-item" id="btnOpenGeneralSettings">⚙️ General Settings</div>
             <div class="drawer-item" onclick="contactSupport()">📩 Contact Support</div>
             <div class="drawer-item danger" id="logoutBtn">Disconnect Account</div>
         </div>
@@ -1496,6 +1520,8 @@
         bindClick('algoToggleBtn', toggleAlgo);
         bindClick('btnRobotConfig', showRobotConfig);
         bindClick('btnRobotConfigBack', hideRobotConfig);
+        bindClick('btnOpenGeneralSettings', showGeneralSettings);
+        bindClick('btnGeneralSettingsBack', hideGeneralSettings);
 
         /* ── Authentication ────────────────────────────────────────────── */
         document.getElementById('connectBtn').addEventListener('click', function () {
@@ -1585,7 +1611,7 @@
             // Clear existing if any
             if (dataTimer) clearInterval(dataTimer);
             fetchData(login);
-            dataTimer = setInterval(function () { fetchData(login); }, 500);
+            dataTimer = setInterval(function () { fetchData(login); }, 5000);
         }
 
         function fetchData(login) {
@@ -1719,55 +1745,33 @@
         var histPeriod = 'today';
         var subTier = 'free';
 
+        function ensureAllLevels() {
+            while (levels.length < 5) {
+                levels.push({ diffToTrade: 0, diffToCut: 0, numPairs: 0 });
+            }
+        }
+
         function renderLevels() {
+            ensureAllLevels();
             var container = document.getElementById('levelsContainer');
-            document.getElementById('levelCountLabel').textContent = '(' + levels.length + '/11)';
             if (!container) return;
             var html = '';
+
+            // Lot Size (master, from Level 1)
+            html += '<div class="form-row"><label>Lot-Size</label><input type="number" step="0.01" value="' + (levels[0].initialLot || 0.0) + '" onchange="levels[0].initialLot=parseFloat(this.value)" /></div>';
+
             for (var i = 0; i < levels.length; i++) {
                 var lv = levels[i];
-                var levelNum = i + 1;
+                var suffix = (i === 0) ? '' : ' ' + i;
 
-                html += '<div class="level-card" style="margin-bottom:12px; padding:12px; background:var(--layer-2); border-radius:12px; border:1px solid var(--glass-border)">';
-                html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">';
-                html += '<span style="font-weight:700; color:var(--accent)">LEVEL ' + levelNum + '</span>';
-                if (levelNum > 1) {
-                    html += '<button class="btn-del-level" onclick="delLevel(' + i + ')" style="background:none; border:none; color:var(--danger); cursor:pointer">✕ Remove</button>';
-                }
-                html += '</div>';
+                // Separator line between levels
+                html += '<div style="border-top:1px solid var(--glass-border); margin:10px 0"></div>';
 
-                // Specialized fields for Level 1
-                if (levelNum === 1) {
-                    html += '<div class="form-row"><label>Lot Size</label><input type="number" step="0.01" value="' + (lv.initialLot || 0.1) + '" onchange="levels[' + i + '].initialLot=parseFloat(this.value)" /></div>';
-                }
-
-                html += '<div class="form-row"><label>Number of Pairs</label><input type="number" step="1" value="' + (lv.numPairs || 1) + '" onchange="levels[' + i + '].numPairs=parseInt(this.value)" /></div>';
-
-                // Specialized fields for Level 3
-                if (levelNum === 3) {
-                    html += '<div class="form-row"><label>Trade Diff 1</label><input type="number" step="0.01" value="' + (lv.diffToTrade || 0) + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" /></div>';
-                    html += '<div class="form-row"><label>Cut Diff 1</label><input type="number" step="0.01" value="' + (lv.diffToCut || 0) + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" /></div>';
-                    html += '<div class="form-row" style="margin-top:8px; border-top:1px solid var(--glass-border); padding-top:8px"><label>Trade Diff 2</label><input type="number" step="0.01" value="' + (lv.diffToTrade2 || 0) + '" onchange="levels[' + i + '].diffToTrade2=parseFloat(this.value)" /></div>';
-                    html += '<div class="form-row"><label>Cut Diff 2</label><input type="number" step="0.01" value="' + (lv.diffToCut2 || 0) + '" onchange="levels[' + i + '].diffToCut2=parseFloat(this.value)" /></div>';
-                } else {
-                    html += '<div class="form-row"><label>Difference to Trade</label><input type="number" step="0.01" value="' + (lv.diffToTrade || 0) + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" /></div>';
-                    html += '<div class="form-row"><label>Difference to Cut</label><input type="number" step="0.01" value="' + (lv.diffToCut || 0) + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" /></div>';
-                }
-
-                html += '</div>';
+                html += '<div class="form-row"><label>Number of Pairs' + suffix + '</label><input type="number" step="1" min="0" value="' + (lv.numPairs || 0) + '" onchange="levels[' + i + '].numPairs=parseInt(this.value)" /></div>';
+                html += '<div class="form-row"><label>Difference to Trade' + suffix + '</label><input type="number" step="0.01" value="' + (lv.diffToTrade || 0) + '" onchange="levels[' + i + '].diffToTrade=parseFloat(this.value)" /></div>';
+                html += '<div class="form-row"><label>Difference to Cut' + suffix + '</label><input type="number" step="0.01" value="' + (lv.diffToCut || 0) + '" onchange="levels[' + i + '].diffToCut=parseFloat(this.value)" /></div>';
             }
             container.innerHTML = html;
-        }
-
-        function addLevel() {
-            if (levels.length >= 11) { alert('Maximum 11 levels allowed.'); return; }
-            levels.push({ diffToTrade: 2.4, diffToCut: 2.0, numPairs: 1 });
-            renderLevels();
-        }
-
-        function delLevel(idx) {
-            levels.splice(idx, 1);
-            renderLevels();
         }
 
         function getConfigFromUI() {
@@ -1839,15 +1843,52 @@
                     }
                 }).catch(function (e) { alert('Save failed: ' + e.message); });
         }
+        function saveConfigAndReturn() {
+            var initData = tg ? tg.initData : '';
+            var cfg = getConfigFromUI();
+            fetch(API + '/api/ea/config/' + currentLogin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                body: JSON.stringify(cfg)
+            }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.ok) {
+                        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        alert('Configuration saved successfully!');
+                        hideRobotConfig();
+                    } else {
+                        alert('Save failed.');
+                    }
+                }).catch(function (e) { alert('Save failed: ' + e.message); });
+        }
         /* ── Robot Config Navigation ─────────────────────────────────── */
         function showRobotConfig() {
             document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
             var config = document.getElementById('robotConfigView');
             if (config) config.classList.add('active');
+            renderLevels();
             window.scrollTo(0, 0);
         }
 
         function hideRobotConfig() {
+            document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+            var expert = document.getElementById('expertView');
+            if (expert) expert.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        /* ── General Settings Navigation ─────────────────────────────────── */
+        function showGeneralSettings() {
+            var drawer = document.getElementById('drawer');
+            if (drawer) drawer.classList.remove('active'); // close sidebar
+
+            document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+            var gs = document.getElementById('generalSettingsView');
+            if (gs) gs.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function hideGeneralSettings() {
             document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
             var expert = document.getElementById('expertView');
             if (expert) expert.classList.add('active');
@@ -1981,17 +2022,39 @@
                         var ls = d.level_statuses[li];
                         var statusColor = ls.status === 'Trade Opened' ? 'var(--success)' : 'var(--text-dim)';
                         var statusIcon = ls.status === 'Trade Opened' ? '🟢' : '⏳';
-                        lhtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--glass-border)">' +
-                            '<div>' +
-                            '<span style="font-weight:700; color:var(--accent)">Level ' + ls.level + '</span>' +
+                        var subLabel = ls.sub_id > 0 ? '.' + ls.sub_id : '';
+
+                        lhtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--glass-border)">' +
+                            '<div style="font-family:monospace; font-size:11px; color:var(--text)">' +
+                            '<span style="font-weight:700; color:var(--accent)">Level ' + ls.level + subLabel + ' :</span> ' +
+                            ls.executed + '/' + ls.max_pairs + ' (Trade: ' + ls.trade_target.toFixed(2) + ' Cut: ' + ls.cut_target.toFixed(2) + ')' +
                             '</div>' +
-                            '<div style="display:flex; align-items:center; gap:8px">' +
-                            '<span style="font-size:12px; color:var(--text-dim)">Diff: ' + ls.difference.toFixed(2) + '</span>' +
-                            '<span style="font-size:12px; color:' + statusColor + '; font-weight:700">' + statusIcon + ' ' + ls.status + '</span>' +
+                            '<div style="display:flex; align-items:center">' +
+                            '<span style="font-size:12px; color:' + statusColor + '; font-weight:700">' + statusIcon + '</span>' +
                             '</div>' +
                             '</div>';
                     }
                     ltc.innerHTML = lhtml;
+                }
+            }
+
+            // Terminal Logs
+            if (d.logs && d.logs.length > 0) {
+                var term = document.getElementById('eaLogsTerminal');
+                if (term) {
+                    var needsScroll = (term.scrollTop + term.clientHeight >= term.scrollHeight - 10);
+                    var logHtml = '';
+                    for (var i = 0; i < d.logs.length; i++) {
+                        var log = d.logs[i];
+                        var color = '#00ff00'; // info green
+                        if (log.type === 'error' || log.type === 'fatal') color = '#ff4d4d'; // red
+                        else if (log.type === 'trade') color = '#00e5ff'; // cyan
+
+                        var latencyTxt = log.latency_ms ? ' [' + log.latency_ms + 'ms]' : '';
+                        logHtml += '<div style="margin-bottom:4px"><span style="color:#888">[' + log.time + ']</span> <span style="color:' + color + '">' + log.msg + latencyTxt + '</span></div>';
+                    }
+                    term.innerHTML = logHtml;
+                    if (needsScroll) term.scrollTop = term.scrollHeight;
                 }
             }
 

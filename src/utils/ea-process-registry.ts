@@ -19,8 +19,10 @@ export interface EaRecord {
         trade_allowed: boolean;
         level_statuses: any[];
         tracker: { executed: number; placed: number };
+        active_trades: { key: string; level: string; lot: number; spread: number }[];
         symbol1: string;
         symbol2: string;
+        logs: { time: string; type: string; msg: string; latency_ms?: number }[];
     };
 }
 

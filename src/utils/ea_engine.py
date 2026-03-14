@@ -16,6 +16,25 @@ def stdin_watcher():
 def normalize(val: float, digits: int = 2) -> float:
     return round(val, digits)
 
+MAX_LOG_HISTORY = 50
+log_history = []
+
+def log_frontend(msg_type: str, msg_text: str, latency_ms: int = None):
+    global log_history
+    ts = time.strftime('%H:%M:%S', time.gmtime())
+    entry = {"time": ts, "type": msg_type, "msg": msg_text}
+    if latency_ms is not None:
+        entry["latency_ms"] = latency_ms
+        
+    log_history.append(entry)
+    if len(log_history) > MAX_LOG_HISTORY:
+        log_history.pop(0)
+        
+    out = {"type": msg_type, "msg": msg_text}
+    if latency_ms is not None:
+        out["latency_ms"] = latency_ms
+    print(json.dumps(out), flush=True)
+
 
 # ─── Order tracking structure ─────────────────────────────────────────────────
 class TradePair:
@@ -30,11 +49,9 @@ class TradePair:
 
 active_pairs: list[TradePair] = []
 
-def check_trade_on_level(level_key: str) -> bool:
-    for p in active_pairs:
-        if p.status == "OPEN" and p.level_key == level_key:
-            return True
-    return False
+def count_open_on_level(level_key: str) -> int:
+    """Count how many open pairs exist for a given level_key."""
+    return sum(1 for p in active_pairs if p.status == "OPEN" and p.level_key == level_key)
 
 def get_ea_profit(magic, sym1, sym2):
     profit = 0.0
@@ -84,7 +101,7 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
     req2 = get_req(sym2, type2)
     
     if not req1 or not req2:
-        print(json.dumps({"type": "error", "msg": "Failed to get symbol ticks for pair entry"}), flush=True)
+        log_frontend("error", "Failed to get symbol ticks for pair entry")
         return False
 
     # 3. Synchronized Execution
@@ -101,11 +118,7 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
         pair_id = f"P_{int(time.time()*1000)}"
         new_pair = TradePair(pair_id, t1, t2, level_key, spread, lot)
         active_pairs.append(new_pair)
-        print(json.dumps({
-            "type": "trade",
-            "msg": f"Hedge Pair Opened (Future + Spot): {level_key}",
-            "latency_ms": latency_ms
-        }), flush=True)
+        log_frontend("trade", f"Buy/Sell Trade Placed (Future+Spot): {level_key}", latency_ms)
         return True
     
     if t1 != -1:
@@ -115,7 +128,7 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
         
     res1_code = res1.retcode if res1 else 'None'
     res2_code = res2.retcode if res2 else 'None'
-    print(json.dumps({"type": "error", "msg": f"Failed pair entry: R1={res1_code}, R2={res2_code}"}), flush=True)
+    log_frontend("error", f"Error in placing Buy/Sell Trade: R1={res1_code}, R2={res2_code}")
     return False
 
 def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
@@ -146,7 +159,7 @@ def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
     latency_ms = int((time.time() - start_time) * 1000)
     
     pair.status = "CLOSED"
-    print(json.dumps({"type": "trade", "msg": f"Hedge Pair Closed: {pair.level_key}", "latency_ms": latency_ms}), flush=True)
+    log_frontend("trade", f"Order Closed by close_trade_place_on_that_level(). Level: {pair.level_key}", latency_ms)
 
 
 def run(path: str, login: str, config: dict):
@@ -205,11 +218,11 @@ def run(path: str, login: str, config: dict):
         if gold_spot_detected and gold_future_detected:
             symbol1 = gold_future_detected   # Forex Gold (future)
             symbol2 = gold_spot_detected     # Spot Gold
-            print(json.dumps({"type": "info", "msg": f"Auto-detected symbols: {symbol1} (future) / {symbol2} (spot)"}), flush=True)
+            log_frontend("info", f"Auto-detected symbols: {symbol1} (future) / {symbol2} (spot)")
         elif gold_spot_detected:
-            print(json.dumps({"type": "info", "msg": f"Only found spot: {gold_spot_detected}, no future detected"}), flush=True)
+            log_frontend("info", f"Only found spot: {gold_spot_detected}, no future detected")
         elif gold_future_detected:
-            print(json.dumps({"type": "info", "msg": f"Only found future: {gold_future_detected}, no spot detected"}), flush=True)
+            log_frontend("info", f"Only found future: {gold_future_detected}, no spot detected")
 
     # Ensure symbols are in Market Watch, otherwise tick queries return None
     mt5.symbol_select(symbol1, True)
@@ -224,10 +237,8 @@ def run(path: str, login: str, config: dict):
     last_heartbeat = 0.0
     PROCESS_INTERVAL_MS = 0.020  # Fast polling for precision
     
-    last_spread_buy = 0.0
-    last_spread_sell = 0.0
-    spread_dir_buy = "stable"
-    spread_dir_sell = "stable"
+    last_spread = 0.0
+    spread_dir = "stable"
     MAX_ACTIVE_TRADES = int(config.get("maxActiveTrades", 5))
 
     # ── Main Loop ───────────────────────────────────────────────────────────
@@ -238,23 +249,24 @@ def run(path: str, login: str, config: dict):
         tick2 = mt5.symbol_info_tick(symbol2)
 
         is_buy = (trade_type == "buy")
-        diff_open_buy = 0.0
-        diff_open_sell = 0.0
+        diff_open = 0.0
+        diff_close = 0.0
 
         if tick1 and tick2:
-            diff_open_buy   = normalize(tick1.ask - tick2.bid, 2)
-            diff_open_sell  = normalize(tick1.bid - tick2.ask, 2)
+            ask1_minus_bid2 = normalize(tick1.ask - tick2.bid, 2)
+            bid1_minus_ask2 = normalize(tick1.bid - tick2.ask, 2)
             
-            if diff_open_buy > last_spread_buy: spread_dir_buy = "widening"
-            elif diff_open_buy < last_spread_buy: spread_dir_buy = "narrowing"
+            if is_buy:
+                diff_open = ask1_minus_bid2
+                diff_close = bid1_minus_ask2
+            else:
+                diff_open = bid1_minus_ask2
+                diff_close = ask1_minus_bid2
             
-            if diff_open_sell < last_spread_sell: spread_dir_sell = "widening" 
-            elif diff_open_sell > last_spread_sell: spread_dir_sell = "narrowing"
+            if diff_open > last_spread: spread_dir = "widening"
+            elif diff_open < last_spread: spread_dir = "narrowing"
             
-            last_spread_buy = diff_open_buy
-            last_spread_sell = diff_open_sell
-
-        diff_open  = diff_open_buy  if is_buy else diff_open_sell
+            last_spread = diff_open
 
         # ── Heartbeat every 500ms ─────────────────────────────────────────
         if now - last_heartbeat >= 0.5:
@@ -268,50 +280,77 @@ def run(path: str, login: str, config: dict):
             # Build level statuses for UI
             level_statuses = []
             for i, lvl in enumerate(levels):
-                diff_to_trade_val = float(lvl.get("diffToTrade", 0))
-                if diff_to_trade_val == 0:
+                num_pairs = int(lvl.get("numPairs", 0))
+                if num_pairs <= 0:
                     continue
-                level_key = f"{i}.0"
-                has_trade = check_trade_on_level(level_key)
-                placed = 1 if diff_to_trade_val != 0 else 0
-                executed = 1 if has_trade else 0
-                
-                level_statuses.append({
-                    "level": i + 1,
-                    "status": "Trade Opened" if has_trade else "Waiting",
-                    "difference": diff_open,
-                    "placed": placed,
-                    "executed": executed
-                })
+
+                targets = [{"trade": float(lvl.get("diffToTrade", 0)), "cut": float(lvl.get("diffToCut", 0)), "sub_id": 0}]
+
+                for t in targets:
+                    diff_to_trade_val = t["trade"]
+                    diff_to_cut_val = t["cut"]
+                    sub_id = t["sub_id"]
+                    
+                    if diff_to_trade_val == 0:
+                        continue
+                        
+                    level_key = f"{i}.{sub_id}"
+                    active_count = sum(1 for p in active_pairs if p.status == "OPEN" and p.level_key == level_key)
+                    
+                    level_statuses.append({
+                        "level": i + 1,
+                        "sub_id": sub_id,
+                        "status": "Trade Opened" if active_count > 0 else "Waiting",
+                        "difference": diff_open,
+                        "placed": num_pairs,
+                        "executed": active_count,
+                        "max_pairs": num_pairs,
+                        "trade_target": diff_to_trade_val,
+                        "cut_target": diff_to_cut_val
+                    })
 
             total_placed = sum(s["placed"] for s in level_statuses)
             total_executed = sum(s["executed"] for s in level_statuses)
 
+            account_info = mt5.account_info()
+            account_data = None
+            if account_info is not None:
+                account_data = {
+                    "balance": account_info.balance,
+                    "equity": account_info.equity,
+                    "margin": account_info.margin,
+                    "free_margin": account_info.margin_free,
+                    "margin_level": account_info.margin_level
+                }
+
             print(json.dumps({
                 "type": "heartbeat",
                 "running": True,
+                "account": account_data,
                 "terminal_trade_allowed": trade_allowed,
                 "symbol1": symbol1,
                 "symbol2": symbol2,
-                "spread_buy": diff_open_buy,
-                "spread_sell": diff_open_sell,
-                "spread_dir": spread_dir_buy if is_buy else spread_dir_sell,
+                "spread_buy": diff_open,
+                "spread_sell": diff_close,
+                "spread_dir": spread_dir,
                 "active_levels": active_lvls,
                 "open_pairs": len(active_lvls),
                 "ea_profit": round(float(ea_profit), 2),
                 "tick1": {"bid": tick1.bid, "ask": tick1.ask} if tick1 else None,
                 "tick2": {"bid": tick2.bid, "ask": tick2.ask} if tick2 else None,
                 "level_statuses": level_statuses,
-                "tracker": {"executed": total_executed, "placed": total_placed}
+                "tracker": {"executed": total_executed, "placed": total_placed},
+                "active_trades": [
+                    {"key": p.key, "level": p.level_key, "lot": p.lot, "spread": p.spread}
+                    for p in active_pairs if p.status == "OPEN"
+                ],
+                "logs": list(log_history)
             }), flush=True)
 
         # Skip execution if we don't have ticks for both symbols
         if not tick1 or not tick2:
             time.sleep(PROCESS_INTERVAL_MS)
             continue
-
-        # diff_close logic
-        diff_close = normalize(tick1.bid - tick2.ask, 2) if is_buy else normalize(tick1.ask - tick2.bid, 2)
 
         # ── Determine symbol order ───────────────────────────────────────
         open_sym1 = symbol1 if symbol_to_trade == "Sym1" else symbol2
@@ -327,13 +366,7 @@ def run(path: str, login: str, config: dict):
             num_pairs = int(lvl.get("numPairs", 0))
             if num_pairs <= 0: continue
 
-            if i == 2: # Level 3 Dual targets
-                targets = [
-                    {"trade": float(lvl.get("diffToTrade", 0)), "cut": float(lvl.get("diffToCut", 0)), "sub_id": 0},
-                    {"trade": float(lvl.get("diffToTrade2", 0)), "cut": float(lvl.get("diffToCut2", 0)), "sub_id": 1}
-                ]
-            else:
-                targets = [{"trade": float(lvl.get("diffToTrade", 0)), "cut": float(lvl.get("diffToCut", 0)), "sub_id": 0}]
+            targets = [{"trade": float(lvl.get("diffToTrade", 0)), "cut": float(lvl.get("diffToCut", 0)), "sub_id": 0}]
 
             for t in targets:
                 diff_to_trade = t["trade"]
@@ -345,13 +378,15 @@ def run(path: str, login: str, config: dict):
                               (not is_buy and diff_open > diff_to_trade)
 
                 if should_open:
-                    if check_trade_on_level(level_key):
+                    active_on_level = count_open_on_level(level_key)
+                    if active_on_level >= num_pairs:
                         continue
                     
                     if current_active_pair_count >= MAX_ACTIVE_TRADES:
                         continue
 
-                    for _ in range(num_pairs):
+                    remaining = num_pairs - active_on_level
+                    for _ in range(remaining):
                         if current_active_pair_count < MAX_ACTIVE_TRADES:
                             if place_pair(open_sym1, open_sym2, l1_lot, stop_loss, take_profit, magic_no, is_buy, level_key, diff_open, deviation):
                                 current_active_pair_count += 1
