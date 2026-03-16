@@ -63,11 +63,11 @@ def get_ea_profit(magic, sym1, sym2):
             if p2 and len(p2) > 0: profit += p2[0].profit
     return profit
 
-def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float, magic: int, is_buy: bool, level_key: str, spread: float, deviation: int = 10) -> bool:
+def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pips: float, tp_pips: float, magic: int, is_buy: bool, level_key: str, spread: float, deviation: int = 10) -> bool:
     """Executes a pair of trades simultaneously and tracks latency."""
     start_time = time.time()
     
-    # 1. Determine local types
+    # 1. Determine local types: BUY mode ALWAYS Buys Sym1, Sells Sym2
     type1 = mt5.ORDER_TYPE_BUY if is_buy else mt5.ORDER_TYPE_SELL
     type2 = mt5.ORDER_TYPE_SELL if is_buy else mt5.ORDER_TYPE_BUY
     
@@ -97,16 +97,20 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
 
-    req1 = get_req(sym1, type1)
-    req2 = get_req(sym2, type2)
+    req1 = get_req(symbol1, type1)
+    req2 = get_req(symbol2, type2)
     
     if not req1 or not req2:
         log_frontend("error", "Failed to get symbol ticks for pair entry")
         return False
 
-    # 3. Synchronized Execution
-    res1 = mt5.order_send(req1)
-    res2 = mt5.order_send(req2)
+    # 3. Synchronized Execution based on SymbolToTrade config
+    if sym_to_trade == "Sym1":
+        res1 = mt5.order_send(req1)
+        res2 = mt5.order_send(req2)
+    else:
+        res2 = mt5.order_send(req2)
+        res1 = mt5.order_send(req1)
     
     end_time = time.time()
     latency_ms = int((end_time - start_time) * 1000)
@@ -142,7 +146,7 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
     log_frontend("error", f"Error in placing Buy/Sell Trade: R1={res1_code}, R2={res2_code}")
     return False
 
-def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
+def close_pair(pair: TradePair, sym_to_close: str, magic: int):
     p1 = mt5.positions_get(ticket=pair.t1)
     p2 = mt5.positions_get(ticket=pair.t2)
     
@@ -165,8 +169,14 @@ def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
         mt5.order_send(req)
 
     start_time = time.time()
-    if p1 and len(p1) > 0: close_pos(p1[0])
-    if p2 and len(p2) > 0: close_pos(p2[0])
+    
+    if sym_to_close == "Sym1":
+        if p1 and len(p1) > 0: close_pos(p1[0])
+        if p2 and len(p2) > 0: close_pos(p2[0])
+    else:
+        if p2 and len(p2) > 0: close_pos(p2[0])
+        if p1 and len(p1) > 0: close_pos(p1[0])
+        
     latency_ms = int((time.time() - start_time) * 1000)
     
     pair.status = "CLOSED"
@@ -395,12 +405,6 @@ def run(path: str, login: str, config: dict):
             time.sleep(PROCESS_INTERVAL_MS)
             continue
 
-        # ── Determine symbol order ───────────────────────────────────────
-        open_sym1 = symbol1 if symbol_to_trade == "Sym1" else symbol2
-        open_sym2 = symbol2 if symbol_to_trade == "Sym1" else symbol1
-        close_sym1 = symbol1 if symbol_to_close == "Sym1" else symbol2
-        close_sym2 = symbol2 if symbol_to_close == "Sym1" else symbol1
-
         # ── Place Logic ──────────────────────────────────────────────────
         current_active_pair_count = sum(1 for p in active_pairs if p.status == "OPEN")
 
@@ -438,7 +442,7 @@ def run(path: str, login: str, config: dict):
                         # Execute 'num_pairs' amount of pair trades simultaneously ONCE.
                         for _ in range(num_pairs):
                             if current_active_pair_count < MAX_ACTIVE_TRADES:
-                                if place_pair(open_sym1, open_sym2, l1_lot, stop_loss, take_profit, magic_no, is_buy, level_key, diff_open, deviation):
+                                if place_pair(symbol1, symbol2, symbol_to_trade, l1_lot, stop_loss, take_profit, magic_no, is_buy, level_key, diff_open, deviation):
                                     current_active_pair_count += 1
 
         # ── Close Logic ──────────────────────────────────────────────────
@@ -465,7 +469,7 @@ def run(path: str, login: str, config: dict):
                 should_close = True
 
             if should_close:
-                close_pair(p, close_sym1, close_sym2, magic_no)
+                close_pair(p, symbol_to_close, magic_no)
                 if not cfg_trade_on_same_level:
                     locked_levels.add(p.level_key)
 
