@@ -1785,7 +1785,10 @@
                 slippage: parseFloat(document.getElementById('cfg_slippage').value) || 1,
                 stopLoss: parseFloat(document.getElementById('cfg_stopLoss').value) || 0,
                 takeProfit: parseFloat(document.getElementById('cfg_takeProfit').value) || 0,
+                symbolToTrade: document.getElementById('cfg_symbolToTrade').value,
+                symbolToClose: document.getElementById('cfg_symbolToClose').value,
                 maxActiveTrades: parseInt(document.getElementById('cfg_maxActiveTrades').value) || 5,
+                tradeOnSameLevel: document.getElementById('cfg_tradeOnSameLevel').checked,
                 levels: levels
             };
             // Ensure Level 1 initialLot is treated as the master initialLot
@@ -1806,7 +1809,10 @@
             document.getElementById('cfg_slippage').value = cfg.slippage || 1;
             document.getElementById('cfg_stopLoss').value = cfg.stopLoss || 0;
             document.getElementById('cfg_takeProfit').value = cfg.takeProfit || 0;
+            document.getElementById('cfg_symbolToTrade').value = cfg.symbolToTrade || 'Sym1';
+            document.getElementById('cfg_symbolToClose').value = cfg.symbolToClose || 'Sym1';
             document.getElementById('cfg_maxActiveTrades').value = cfg.maxActiveTrades || 5;
+            document.getElementById('cfg_tradeOnSameLevel').checked = cfg.tradeOnSameLevel || false;
             levels = Array.isArray(cfg.levels) ? cfg.levels : [];
             // Backfill Level 1 lot size from old global if missing
             if (levels.length > 0 && !levels[0].initialLot) {
@@ -1837,25 +1843,39 @@
                         if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                         alert('Configuration saved!');
                     }
-                }).catch(function (e) { alert('Save failed: ' + e.message); });
+                }).catch(function (e) {
+                    if (tg && tg.showAlert) { tg.showAlert('Save failed: ' + e.message); } else { alert('Save failed: ' + e.message); }
+                });
         }
         function saveConfigAndReturn() {
-            var initData = tg ? tg.initData : '';
-            var cfg = getConfigFromUI();
-            fetch(API + '/api/ea/config/' + currentLogin, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-                body: JSON.stringify(cfg)
-            }).then(function (r) { return r.json(); })
-                .then(function (d) {
-                    if (d.ok) {
-                        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        alert('Configuration saved successfully!');
-                        hideRobotConfig();
-                    } else {
-                        alert('Save failed.');
-                    }
-                }).catch(function (e) { alert('Save failed: ' + e.message); });
+            try {
+                var initData = tg ? tg.initData : '';
+                var cfg = getConfigFromUI();
+                fetch(API + '/api/ea/config/' + currentLogin, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                    body: JSON.stringify(cfg)
+                }).then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.ok) {
+                            if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                            if (tg && tg.showAlert) {
+                                tg.showAlert('Configuration saved successfully!', function () {
+                                    hideRobotConfig();
+                                });
+                            } else {
+                                alert('Configuration saved successfully!');
+                                hideRobotConfig();
+                            }
+                        } else {
+                            if (tg && tg.showAlert) { tg.showAlert('Save failed. Please try again.'); } else { alert('Save failed.'); }
+                        }
+                    }).catch(function (e) {
+                        if (tg && tg.showAlert) { tg.showAlert('Save failed: ' + e.message); } else { alert('Save failed: ' + e.message); }
+                    });
+            } catch (err) {
+                if (tg && tg.showAlert) { tg.showAlert('Config error: ' + err.message); } else { alert('Config error: ' + err.message); }
+            }
         }
         /* ── Robot Config Navigation ─────────────────────────────────── */
         function showRobotConfig() {
