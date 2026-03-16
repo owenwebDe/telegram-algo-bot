@@ -176,8 +176,9 @@ def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
 def run(path: str, login: str, config: dict):
     global active_pairs
     trade_type        = config.get("tradeType", "buy")          # "buy" | "sell"
-    symbol1           = config.get("symbol1", "XAUUSD")
-    symbol2           = config.get("symbol2", "XAUUSD")
+    # Always start with neutral defaults — auto-detection WILL override these
+    symbol1           = "XAUUSD"
+    symbol2           = "XAUUSD"
     magic_no          = int(config.get("magicNo", 12345))
     stop_loss         = float(config.get("stopLoss", 0))
     take_profit       = float(config.get("takeProfit", 0))

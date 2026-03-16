@@ -1833,14 +1833,15 @@
                     .then(function (d) {
                         if (d.ok) {
                             if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                            if (tg && tg.showAlert) {
-                                tg.showAlert('Configuration saved successfully!', function () {
-                                    hideRobotConfig();
-                                });
-                            } else {
-                                alert('Configuration saved successfully!');
-                                hideRobotConfig();
-                            }
+                            // Navigate back immediately — no blocking alert
+                            hideRobotConfig();
+                            // Instantly poll status to refresh Trade Tracker Placed count
+                            setTimeout(function () {
+                                fetch(API + '/api/ea/status/' + currentLogin, { headers: { 'x-telegram-init-data': initData } })
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (d) { updateEaStatus(d); })
+                                    .catch(function () { });
+                            }, 200);
                         } else {
                             if (tg && tg.showAlert) { tg.showAlert('Save failed. Please try again.'); } else { alert('Save failed.'); }
                         }
