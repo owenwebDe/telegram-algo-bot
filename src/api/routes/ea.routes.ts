@@ -239,8 +239,7 @@ router.get(
                     const levels: any[] = config?.levels || [];
                     for (const lvl of levels) {
                         const np = parseInt(String(lvl.numPairs || '0'), 10);
-                        const dtt = parseFloat(String(lvl.diffToTrade || '0'));
-                        if (np > 0 && dtt !== 0) {
+                        if (np > 0) {
                             placedFromConfig += np;
                         }
                     }

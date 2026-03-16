@@ -400,7 +400,6 @@ def run(path: str, login: str, config: dict):
 
             for t in targets:
                 diff_to_trade = t["trade"]
-                if diff_to_trade == 0: continue
                 
                 level_key = f"{i}.{t['sub_id']}"
                 
@@ -433,8 +432,6 @@ def run(path: str, login: str, config: dict):
                 diff_to_cut = float(lvl.get("diffToCut" if sub_id==0 else "diffToCut2", 0))
             except:
                 continue
-
-            if diff_to_cut == 0: continue
 
             should_close = (is_buy and diff_close > diff_to_cut) or \
                            (not is_buy and diff_close < diff_to_cut)
