@@ -1723,8 +1723,8 @@
         var subTier = 'free';
 
         function ensureAllLevels() {
-            while (levels.length < 5) {
-                levels.push({ diffToTrade: 0, diffToCut: 0, numPairs: 0 });
+            while (levels.length < 11) {
+                levels.push({ diffToTrade: 0.00, diffToCut: 0.00, numPairs: 0, initialLot: 0.00 });
             }
         }
 
@@ -1797,8 +1797,11 @@
             var initData = tg ? tg.initData : '';
             fetch(API + '/api/ea/config/' + login, { headers: { 'x-telegram-init-data': initData } })
                 .then(function (r) { return r.json(); })
-                .then(function (cfg) { applyConfigToUI(cfg); })
-                .catch(function () { });
+                .then(function (d) {
+                    if (d.ok && d.config) {
+                        applyConfigToUI(d.config);
+                    }
+                }).catch(function () { });
         }
 
         function saveConfig() {

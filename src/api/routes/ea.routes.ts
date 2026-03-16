@@ -115,7 +115,7 @@ router.post(
                 instanceManager.stopEaEngine(user.id.toString(), login);
                 setTimeout(() => {
                     try {
-                        instanceManager.startEaEngine(user.id.toString(), login, saved.config);
+                        instanceManager.startEaEngine(user.id.toString(), login, saved);
                     } catch (e: any) {
                         logger.error('Auto-restart failed', { error: e.message });
                     }
@@ -233,8 +233,9 @@ router.get(
                     const config = await getEaConfig(user.id, login);
                     const levels: any[] = config?.levels || [];
                     for (const lvl of levels) {
-                        const np = parseInt(lvl.numPairs || '0', 10);
-                        if (np > 0 && (parseFloat(lvl.diffToTrade || '0') !== 0)) {
+                        const np = parseInt(String(lvl.numPairs || '0'), 10);
+                        const dtt = parseFloat(String(lvl.diffToTrade || '0'));
+                        if (np > 0 && dtt !== 0) {
                             placedFromConfig += np;
                         }
                     }
