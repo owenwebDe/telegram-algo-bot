@@ -188,6 +188,8 @@ def run(path: str, login: str, config: dict):
     slippage          = int(config.get("slippage", 1))
     deviation         = slippage * 10  # convert pips to points
     levels            = config.get("levels", [])               # list of level dicts
+    
+    locked_levels     = set() # Remembers closed levels if tradeOnSameLevel=False
 
     # ── MT5 Connection ──────────────────────────────────────────────────────
     init_result = mt5.initialize(path=path, timeout=30000) if path else mt5.initialize(timeout=30000)
@@ -279,6 +281,11 @@ def run(path: str, login: str, config: dict):
         tick2 = mt5.symbol_info_tick(symbol2)
 
         is_buy = (trade_type == "buy")
+        diff_open_buy = 0.0
+        diff_open_sell = 0.0
+        diff_close_buy = 0.0
+        diff_close_sell = 0.0
+
         diff_open = 0.0
         diff_close = 0.0
 
@@ -286,12 +293,19 @@ def run(path: str, login: str, config: dict):
             ask1_minus_bid2 = normalize(tick1.ask - tick2.bid, 2)
             bid1_minus_ask2 = normalize(tick1.bid - tick2.ask, 2)
             
+            # Exact MQL5 Spread Formulas
+            diff_open_buy = ask1_minus_bid2
+            diff_open_sell = bid1_minus_ask2
+            diff_close_buy = bid1_minus_ask2
+            diff_close_sell = ask1_minus_bid2
+            
+            # Keep standard heartbeat diff logic for dashboard graph tracking
             if is_buy:
-                diff_open = ask1_minus_bid2
-                diff_close = bid1_minus_ask2
+                diff_open = diff_open_buy
+                diff_close = diff_close_buy
             else:
-                diff_open = bid1_minus_ask2
-                diff_close = ask1_minus_bid2
+                diff_open = diff_open_sell
+                diff_close = diff_close_sell
             
             if diff_open > last_spread: spread_dir = "widening"
             elif diff_open < last_spread: spread_dir = "narrowing"
@@ -321,9 +335,8 @@ def run(path: str, login: str, config: dict):
                     diff_to_cut_val = t["cut"]
                     sub_id = t["sub_id"]
                     
-                    if diff_to_trade_val == 0:
+                    if num_pairs == 0:
                         continue
-                        
                     level_key = f"{i}.{sub_id}"
                     active_count = sum(1 for p in active_pairs if p.status == "OPEN" and p.level_key == level_key)
                     
@@ -400,25 +413,33 @@ def run(path: str, login: str, config: dict):
 
             for t in targets:
                 diff_to_trade = t["trade"]
+                if diff_to_trade == 0.0:
+                    continue
                 
                 level_key = f"{i}.{t['sub_id']}"
                 
-                should_open = (is_buy and diff_open < diff_to_trade) or \
-                              (not is_buy and diff_open > diff_to_trade)
+                # EA MQL5 Open Condition
+                should_open = False
+                if is_buy and diff_open_buy < diff_to_trade:
+                    should_open = True
+                elif not is_buy and diff_open_sell > diff_to_trade:
+                    should_open = True
 
                 if should_open:
+                    if level_key in locked_levels:
+                        continue
+                        
+                    # MQL5 Rule: ONLY open trades if there are currently NO existing trades on that level
                     active_on_level = count_open_on_level(level_key)
-                    if active_on_level >= num_pairs:
-                        continue
-                    
-                    if current_active_pair_count >= MAX_ACTIVE_TRADES:
-                        continue
+                    if active_on_level == 0:
+                        if current_active_pair_count >= MAX_ACTIVE_TRADES:
+                            continue
 
-                    remaining = num_pairs - active_on_level
-                    for _ in range(remaining):
-                        if current_active_pair_count < MAX_ACTIVE_TRADES:
-                            if place_pair(open_sym1, open_sym2, l1_lot, stop_loss, take_profit, magic_no, is_buy, level_key, diff_open, deviation):
-                                current_active_pair_count += 1
+                        # Execute 'num_pairs' amount of pair trades simultaneously ONCE.
+                        for _ in range(num_pairs):
+                            if current_active_pair_count < MAX_ACTIVE_TRADES:
+                                if place_pair(open_sym1, open_sym2, l1_lot, stop_loss, take_profit, magic_no, is_buy, level_key, diff_open, deviation):
+                                    current_active_pair_count += 1
 
         # ── Close Logic ──────────────────────────────────────────────────
         for p in active_pairs:
@@ -432,12 +453,21 @@ def run(path: str, login: str, config: dict):
                 diff_to_cut = float(lvl.get("diffToCut" if sub_id==0 else "diffToCut2", 0))
             except:
                 continue
+                
+            if diff_to_cut == 0.0:
+                continue
 
-            should_close = (is_buy and diff_close > diff_to_cut) or \
-                           (not is_buy and diff_close < diff_to_cut)
+            # EA MQL5 Close Condition
+            should_close = False
+            if is_buy and diff_close_buy > diff_to_cut:
+                should_close = True
+            elif not is_buy and diff_close_sell < diff_to_cut:
+                should_close = True
 
             if should_close:
                 close_pair(p, close_sym1, close_sym2, magic_no)
+                if not cfg_trade_on_same_level:
+                    locked_levels.add(p.level_key)
 
         time.sleep(PROCESS_INTERVAL_MS)
 
