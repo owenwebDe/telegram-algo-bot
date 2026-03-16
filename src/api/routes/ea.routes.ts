@@ -113,13 +113,13 @@ router.post(
             if (rec && rec.status === 'running') {
                 logger.info('Config saved while EA running — auto-restarting', { userId: user.id, login });
                 instanceManager.stopEaEngine(user.id.toString(), login);
-                setTimeout(async () => {
+                setTimeout(() => {
                     try {
-                        await instanceManager.startEaEngine(user.id.toString(), login);
+                        instanceManager.startEaEngine(user.id.toString(), login, saved.config);
                     } catch (e: any) {
                         logger.error('Auto-restart failed', { error: e.message });
                     }
-                }, 3000);
+                }, 1000);
             }
         } catch (err) {
             next(err);
