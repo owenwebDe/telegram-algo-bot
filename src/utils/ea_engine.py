@@ -203,27 +203,43 @@ def run(path: str, login: str, config: dict):
     # ── Auto-detect gold spot and future symbols ───────────────────────────
     all_symbols = mt5.symbols_get()
     if all_symbols:
-        gold_spot_detected = None
-        gold_future_detected = None
+        # Pattern to identify futures (months or year numbers in the name)
+        future_indicators = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", ".20", "-2" , "_F"]
 
-        # First preference: visible symbols in Market Watch
-        for s in all_symbols:
-            name = s.name.upper()
-            if not s.visible:
-                continue
-            if (name == "XAUUSD" or name == "GOLD") and gold_spot_detected is None:
-                gold_spot_detected = s.name
-            elif ((name.startswith("XAUUSD") and name != "XAUUSD") or (name.startswith("GOLD") and name != "GOLD")) and gold_future_detected is None:
-                gold_future_detected = s.name
-
-        # Second preference: search ALL symbols if still missing
-        if gold_spot_detected is None or gold_future_detected is None:
-            for s in all_symbols:
+        def detect_in_list(sym_list):
+            spot, future = None, None
+            for s in sym_list:
                 name = s.name.upper()
-                if (name == "XAUUSD" or name == "GOLD") and gold_spot_detected is None:
-                    gold_spot_detected = s.name
-                elif ((name.startswith("XAUUSD") and name != "XAUUSD") or (name.startswith("GOLD") and name != "GOLD")) and gold_future_detected is None:
-                    gold_future_detected = s.name
+                if not (name.startswith("XAUUSD") or name.startswith("GOLD")):
+                    continue
+                
+                # Exclude XAUEUR or other non-USD pairs
+                if "EUR" in name or "GBP" in name:
+                    continue
+
+                is_future = any(p in name for p in future_indicators)
+                
+                if is_future:
+                    if future is None: future = s.name
+                else:
+                    # Preference for spot: exact match > shortest name
+                    if spot is None:
+                        spot = s.name
+                    else:
+                        if name == "XAUUSD" or name == "GOLD":
+                            spot = s.name
+                        elif len(s.name) < len(spot):
+                            spot = s.name
+            return spot, future
+
+        # First preference: Market Watch
+        gold_spot_detected, gold_future_detected = detect_in_list([s for s in all_symbols if s.visible])
+
+        # Second preference: All symbols
+        if gold_spot_detected is None or gold_future_detected is None:
+            s_s, s_f = detect_in_list(all_symbols)
+            if gold_spot_detected is None: gold_spot_detected = s_s
+            if gold_future_detected is None: gold_future_detected = s_f
 
         # Override config symbols with detected ones
         if gold_spot_detected and gold_future_detected:
@@ -231,9 +247,11 @@ def run(path: str, login: str, config: dict):
             symbol2 = gold_spot_detected     # Spot Gold
             log_frontend("info", f"Auto-detected symbols: {symbol1} (future) / {symbol2} (spot)")
         elif gold_spot_detected:
-            log_frontend("info", f"Only found spot: {gold_spot_detected}, no future detected")
+            symbol2 = gold_spot_detected
+            log_frontend("info", f"Detected only spot: {gold_spot_detected}")
         elif gold_future_detected:
-            log_frontend("info", f"Only found future: {gold_future_detected}, no spot detected")
+            symbol1 = gold_future_detected
+            log_frontend("info", f"Detected only future: {gold_future_detected}")
 
     # Ensure symbols are in Market Watch, otherwise tick queries return None
     mt5.symbol_select(symbol1, True)

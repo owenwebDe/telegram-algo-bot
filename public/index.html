@@ -2017,7 +2017,11 @@
 
             // Labels
             if (d.symbol1) document.getElementById('labelSym1').textContent = 'Gold Futures (' + d.symbol1 + ')';
-            if (d.symbol2) document.getElementById('labelSym2').textContent = 'Gold Spot (' + d.symbol2 + ')';
+            if (d.symbol2) {
+                document.getElementById('labelSym2').textContent = 'Gold Spot (' + d.symbol2 + ')';
+            } else {
+                document.getElementById('labelSym2').textContent = 'Gold Spot (Not Detected)';
+            }
 
             // Trade Tracker
             if (d.tracker) {
