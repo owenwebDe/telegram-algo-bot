@@ -118,7 +118,18 @@ def place_pair(sym1: str, sym2: str, lot: float, sl_pips: float, tp_pips: float,
         pair_id = f"P_{int(time.time()*1000)}"
         new_pair = TradePair(pair_id, t1, t2, level_key, spread, lot)
         active_pairs.append(new_pair)
-        log_frontend("trade", f"Buy/Sell Trade Placed (Future+Spot): {level_key}", latency_ms)
+        
+        # Determine exact level and diff targets for logging
+        try:
+            parts = level_key.split(".")
+            base_lvl = parts[0]
+        except:
+            base_lvl = level_key
+
+        trade_type_str = "Buy" if is_buy else "Sell"
+        log_frontend("trade", f"Level = {base_lvl} Difference to Place Trade = {spread} Current Difference = {spread}")
+        log_frontend("trade", f"{trade_type_str} Trade Placed: {t1} {t2}")
+        log_frontend("trade", f"Trade Ticket {t1} {t2} Of lvl {base_lvl} Is Added to Struct Array Size = {len(active_pairs)}", latency_ms)
         return True
     
     if t1 != -1:
@@ -159,7 +170,7 @@ def close_pair(pair: TradePair, sym1: str, sym2: str, magic: int):
     latency_ms = int((time.time() - start_time) * 1000)
     
     pair.status = "CLOSED"
-    log_frontend("trade", f"Order Closed by close_trade_place_on_that_level(). Level: {pair.level_key}", latency_ms)
+    log_frontend("trade", f"Order Closed by close_trade_place_on_that_level(). Ticket: {pair.t1} {pair.t2}", latency_ms)
 
 
 def run(path: str, login: str, config: dict):

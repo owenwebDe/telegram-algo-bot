@@ -2043,23 +2043,25 @@
             if (d.level_statuses && d.level_statuses.length > 0) {
                 var ltc = document.getElementById('levelTrackingCards');
                 if (ltc) {
-                    var lhtml = '';
+                    var lhtml = '<div style="font-family:monospace; font-size:12px; color:var(--text); line-height:1.6; padding:10px 0">';
+                    var totalExec = 0;
+                    var totalMax = 0;
+
                     for (var li = 0; li < d.level_statuses.length; li++) {
                         var ls = d.level_statuses[li];
-                        var statusColor = ls.status === 'Trade Opened' ? 'var(--success)' : 'var(--text-dim)';
-                        var statusIcon = ls.status === 'Trade Opened' ? '🟢' : '⏳';
-                        var subLabel = ls.sub_id > 0 ? '.' + ls.sub_id : '';
+                        totalExec += ls.executed;
+                        totalMax += ls.max_pairs;
 
-                        lhtml += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--glass-border)">' +
-                            '<div style="font-family:monospace; font-size:11px; color:var(--text)">' +
-                            '<span style="font-weight:700; color:var(--accent)">Level ' + ls.level + subLabel + ' :</span> ' +
-                            ls.executed + '/' + ls.max_pairs + ' (Trade: ' + ls.trade_target.toFixed(2) + ' Cut: ' + ls.cut_target.toFixed(2) + ')' +
-                            '</div>' +
-                            '<div style="display:flex; align-items:center">' +
-                            '<span style="font-size:12px; color:' + statusColor + '; font-weight:700">' + statusIcon + '</span>' +
-                            '</div>' +
+                        var subLabel = ls.sub_id > 0 ? '.' + ls.sub_id : '';
+                        lhtml += '<div>' +
+                            'Pair ' + ls.level + subLabel + '  :  ' +
+                            ls.executed + '/' + ls.max_pairs +
+                            ' (Trade : ' + ls.trade_target.toFixed(2) + ' Cut : ' + ls.cut_target.toFixed(2) + ')' +
                             '</div>';
                     }
+
+                    lhtml += '<div style="margin-top:8px; font-weight:700">Total Pairs: ' + totalExec + '/' + totalMax + '</div>';
+                    lhtml += '</div>';
                     ltc.innerHTML = lhtml;
                 }
             }
