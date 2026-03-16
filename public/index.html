@@ -1281,14 +1281,6 @@
                         </select>
                     </div>
                     <div class="form-row">
-                        <label>Symbol 1 (Forex Gold)</label>
-                        <input type="text" id="cfg_symbol1" value="XAUUSD" />
-                    </div>
-                    <div class="form-row">
-                        <label>Symbol 2 (Spot Gold)</label>
-                        <input type="text" id="cfg_symbol2" value="XAUUSD." />
-                    </div>
-                    <div class="form-row">
                         <label>Max Active Trades</label>
                         <input type="number" id="cfg_maxActiveTrades" value="5" min="1" step="1" />
                     </div>
@@ -1779,8 +1771,6 @@
         function getConfigFromUI() {
             var cfg = {
                 tradeType: document.getElementById('cfg_tradeType').value,
-                symbol1: document.getElementById('cfg_symbol1').value.trim(),
-                symbol2: document.getElementById('cfg_symbol2').value.trim(),
                 magicNo: parseInt(document.getElementById('cfg_magicNo').value) || 12345,
                 slippage: parseFloat(document.getElementById('cfg_slippage').value) || 1,
                 stopLoss: parseFloat(document.getElementById('cfg_stopLoss').value) || 0,
@@ -1803,8 +1793,6 @@
         function applyConfigToUI(cfg) {
             if (!cfg) return;
             document.getElementById('cfg_tradeType').value = cfg.tradeType || 'buy';
-            document.getElementById('cfg_symbol1').value = cfg.symbol1 || 'XAUUSD';
-            document.getElementById('cfg_symbol2').value = cfg.symbol2 || 'XAUUSD.';
             document.getElementById('cfg_magicNo').value = cfg.magicNo || 12345;
             document.getElementById('cfg_slippage').value = cfg.slippage || 1;
             document.getElementById('cfg_stopLoss').value = cfg.stopLoss || 0;
