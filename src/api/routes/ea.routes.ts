@@ -105,6 +105,9 @@ router.post(
 
             res.json({ ok: true, login, updatedAt: saved.updated_at });
 
+            // Invalidate the placedCache instantly so the UI Trade Tracker updates immediately
+            placedCache.delete(`${user.id}_${login}`);
+
             // Auto-restart EA if it's currently running so it picks up the new config
             const rec = eaRegistry.get(user.id.toString(), login);
             if (rec && rec.status === 'running') {
