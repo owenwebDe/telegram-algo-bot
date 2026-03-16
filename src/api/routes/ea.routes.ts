@@ -31,39 +31,44 @@ router.get(
             if (!config) {
                 // Return defaults if no config saved yet
                 res.json({
-                    login,
-                    tradeType: 'buy',
-                    symbol1: 'XAUUSD',
-                    symbol2: 'XAUUSD.',
-                    initialLot: 0.1,
-                    magicNo: 12345,
-                    stopLoss: 0,
-                    takeProfit: 0,
-                    symbolToTrade: 'Sym1',
-                    symbolToClose: 'Sym1',
-                    tradeOnSameLevel: false,
-                    slippage: 1,
-                    levels: [],
-                    isRunning: false,
-                });
+                    ok: true,
+                    config: {
+                        tradeType: 'buy',
+                        symbol1: 'XAUUSD',
+                        symbol2: 'XAUUSD.',
+                        initialLot: 0.1,
+                        magicNo: 12345,
+                        stopLoss: 0,
+                        takeProfit: 0,
+                        symbolToTrade: 'Sym1',
+                        symbolToClose: 'Sym1',
+                        tradeOnSameLevel: false,
+                        slippage: 1,
+                        levels: [],
+                        isRunning: false,
+                    }
+                });;
                 return;
             }
 
             res.json({
-                login: config.login,
-                tradeType: config.trade_type,
-                symbol1: config.symbol1,
-                symbol2: config.symbol2,
-                initialLot: config.initial_lot,
-                magicNo: config.magic_no,
-                stopLoss: config.stop_loss,
-                takeProfit: config.take_profit,
-                symbol_to_trade: config.symbol_to_trade,
-                symbol_to_close: config.symbol_to_close,
-                trade_on_same_level: config.trade_on_same_level,
-                slippage: config.slippage,
-                levels: config.levels,
-                isRunning: config.is_running,
+                ok: true,
+                config: {
+                    login: config.login,
+                    tradeType: config.trade_type,
+                    symbol1: config.symbol1,
+                    symbol2: config.symbol2,
+                    initialLot: config.initial_lot,
+                    magicNo: config.magic_no,
+                    stopLoss: config.stop_loss,
+                    takeProfit: config.take_profit,
+                    symbolToTrade: config.symbol_to_trade,
+                    symbolToClose: config.symbol_to_close,
+                    tradeOnSameLevel: config.trade_on_same_level,
+                    slippage: config.slippage,
+                    levels: config.levels,
+                    isRunning: config.is_running,
+                }
             });
         } catch (err) {
             next(err);

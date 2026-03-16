@@ -1856,8 +1856,9 @@
             document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
             var config = document.getElementById('robotConfigView');
             if (config) config.classList.add('active');
-            renderLevels();
             window.scrollTo(0, 0);
+            // Always reload the latest saved config from server so values are never reset
+            loadConfig(currentLogin);
         }
 
         function hideRobotConfig() {
