@@ -147,10 +147,148 @@ def fetch_data(terminal_path=None, expected_login=None):
     print(json.dumps(data))
     mt5.shutdown()
 
+def fetch_history(terminal_path=None, expected_login=None, hours=24, magic=None):
+    import datetime
+
+    init_params = {"timeout": 30000}
+    if terminal_path:
+        init_params["path"] = terminal_path
+
+    if not mt5.initialize(**init_params):
+        print(json.dumps({"status": "failed", "message": f"initialize() failed: {mt5.last_error()}"}))
+        return
+
+    account_info = mt5.account_info()
+    if account_info is None:
+        print(json.dumps({"status": "failed", "message": "Failed to get account info"}))
+        mt5.shutdown()
+        return
+
+    if expected_login and str(account_info.login) != str(expected_login):
+        print(json.dumps({"status": "failed", "message": f"Wrong account. Expected {expected_login}, got {account_info.login}"}))
+        mt5.shutdown()
+        return
+
+    date_to   = datetime.datetime.now()
+    date_from = date_to - datetime.timedelta(hours=hours)
+
+    raw_deals = mt5.history_deals_get(date_from, date_to)
+    closing_deals = []
+
+    if raw_deals:
+        for d in raw_deals:
+            # Skip balance/credit/bonus entries (type > 1)
+            if d.type > 1:
+                continue
+            # Only closing (DEAL_ENTRY_OUT = 1) and in-out reversals (DEAL_ENTRY_INOUT = 2)
+            if d.entry not in (1, 2):
+                continue
+            # Filter by magic if requested
+            if magic is not None and d.magic != magic:
+                continue
+            closing_deals.append({
+                "ticket":     d.ticket,
+                "time":       d.time,
+                "type":       "buy" if d.type == 0 else "sell",
+                "symbol":     d.symbol,
+                "volume":     d.volume,
+                "price":      d.price,
+                "commission": d.commission,
+                "swap":       d.swap,
+                "profit":     d.profit,
+                "comment":    d.comment,
+                "magic":      d.magic,
+            })
+
+    # Group into pairs: same comment + timestamps within 5 seconds
+    pairs  = []
+    used   = set()
+
+    for i, d1 in enumerate(closing_deals):
+        if i in used:
+            continue
+        matched_j = None
+        for j, d2 in enumerate(closing_deals):
+            if j == i or j in used:
+                continue
+            same_comment = d1["comment"] and d1["comment"] == d2["comment"]
+            close_in_time = abs(d1["time"] - d2["time"]) <= 5
+            diff_symbol   = d1["symbol"] != d2["symbol"]
+            if same_comment and close_in_time and diff_symbol:
+                matched_j = j
+                break
+
+        if matched_j is not None:
+            d2 = closing_deals[matched_j]
+            used.add(i)
+            used.add(matched_j)
+            total = round(
+                d1["profit"] + d1["commission"] + d1["swap"] +
+                d2["profit"] + d2["commission"] + d2["swap"], 2
+            )
+            raw_lvl = d1["comment"].replace("EA:", "") if d1["comment"].startswith("EA:") else d1["comment"]
+            try:
+                lvl_num = int(raw_lvl.split(".")[0]) + 1
+                lvl_label = f"L{lvl_num}"
+            except Exception:
+                lvl_label = raw_lvl or "—"
+            pairs.append({
+                "time":    max(d1["time"], d2["time"]),
+                "sym1":    d1["symbol"],
+                "sym2":    d2["symbol"],
+                "symbol":  f"{d1['symbol']} / {d2['symbol']}",
+                "volume":  d1["volume"],
+                "profit":  total,
+                "level":   lvl_label,
+                "comment": d1["comment"],
+            })
+        else:
+            # Unpaired — show individually (orphan or SL/TP hit)
+            used.add(i)
+            total = round(d1["profit"] + d1["commission"] + d1["swap"], 2)
+            raw_lvl = d1["comment"].replace("EA:", "") if d1["comment"].startswith("EA:") else d1["comment"]
+            try:
+                lvl_num = int(raw_lvl.split(".")[0]) + 1
+                lvl_label = f"L{lvl_num}"
+            except Exception:
+                lvl_label = raw_lvl or "—"
+            pairs.append({
+                "time":    d1["time"],
+                "sym1":    d1["symbol"],
+                "sym2":    "",
+                "symbol":  d1["symbol"],
+                "volume":  d1["volume"],
+                "profit":  total,
+                "level":   lvl_label,
+                "comment": d1["comment"],
+            })
+
+    pairs.sort(key=lambda x: x["time"], reverse=True)
+
+    wins        = sum(1 for p in pairs if p["profit"] > 0)
+    total_profit = round(sum(p["profit"] for p in pairs), 2)
+
+    print(json.dumps({
+        "status":       "success",
+        "deals":        pairs,
+        "total_profit": total_profit,
+        "total_trades": len(pairs),
+        "wins":         wins,
+        "losses":       len(pairs) - wins,
+    }))
+    mt5.shutdown()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", help="Path to terminal64.exe")
-    parser.add_argument("--login", help="Expected account login")
+    parser.add_argument("--path",    help="Path to terminal64.exe")
+    parser.add_argument("--login",   help="Expected account login")
+    parser.add_argument("--history", action="store_true", help="Fetch closed trade history")
+    parser.add_argument("--hours",   type=int, default=24,  help="Number of hours back to fetch (default 24)")
+    parser.add_argument("--magic",   type=int, default=None, help="Filter by EA magic number")
     args = parser.parse_args()
-    
-    fetch_data(terminal_path=args.path, expected_login=args.login)
+
+    if args.history:
+        fetch_history(terminal_path=args.path, expected_login=args.login, hours=args.hours, magic=args.magic)
+    else:
+        fetch_data(terminal_path=args.path, expected_login=args.login)

@@ -139,3 +139,40 @@ export async function getAccountData(
 
   return await instanceManager.getAccountData(user.id.toString(), login);
 }
+
+/**
+ * Fetch closed trade history for an account.
+ */
+export async function getTradeHistory(
+  telegramId: number,
+  login: string,
+  hours: number,
+  magic?: number,
+): Promise<any> {
+  const user = await upsertUserByTelegramId(telegramId);
+  const account = await getMt5AccountByLogin(user.id, login);
+
+  if (!account || account.status !== 'connected') {
+    return { status: 'failed', message: 'Account not connected' };
+  }
+
+  return await instanceManager.getHistory(user.id.toString(), login, hours, magic);
+}
+
+/**
+ * Close all open MT5 positions for an account (optionally filtered by magic).
+ */
+export async function closeAllAccountTrades(
+  telegramId: number,
+  login: string,
+  magic?: number,
+): Promise<any> {
+  const user = await upsertUserByTelegramId(telegramId);
+  const account = await getMt5AccountByLogin(user.id, login);
+
+  if (!account || account.status !== 'connected') {
+    return { status: 'failed', message: 'Account not connected' };
+  }
+
+  return await instanceManager.closeAllTrades(user.id.toString(), login, magic);
+}

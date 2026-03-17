@@ -63,6 +63,18 @@ def get_ea_profit(magic, sym1, sym2):
             if p2 and len(p2) > 0: profit += p2[0].profit
     return profit
 
+def get_symbol_filling(sym):
+    """Detect the best filling mode for a symbol."""
+    info = mt5.symbol_info(sym)
+    if not info:
+        return mt5.ORDER_FILLING_IOC
+    filling = info.filling_mode
+    if filling & 1:  # FOK
+        return mt5.ORDER_FILLING_FOK
+    if filling & 2:  # IOC
+        return mt5.ORDER_FILLING_IOC
+    return mt5.ORDER_FILLING_RETURN
+
 def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pips: float, tp_pips: float, magic: int, is_buy: bool, level_key: str, spread: float, deviation: int = 10) -> bool:
     """Executes a pair of trades simultaneously and tracks latency."""
     start_time = time.time()
@@ -71,18 +83,23 @@ def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pip
     type1 = mt5.ORDER_TYPE_BUY if is_buy else mt5.ORDER_TYPE_SELL
     type2 = mt5.ORDER_TYPE_SELL if is_buy else mt5.ORDER_TYPE_BUY
     
-    # 2. Prepare requests
+    # 2. Prepare requests with correct filling mode per symbol
     def get_req(sym, order_type):
         tick = mt5.symbol_info_tick(sym)
         if not tick: return None
         price = tick.ask if order_type == mt5.ORDER_TYPE_BUY else tick.bid
-        point = mt5.symbol_info(sym).point
+        sym_info = mt5.symbol_info(sym)
+        if not sym_info:
+            return None
+        point = sym_info.point
         sl = 0.0
         tp = 0.0
         if sl_pips:
             sl = (price - sl_pips * 10 * point) if order_type == mt5.ORDER_TYPE_BUY else (price + sl_pips * 10 * point)
         if tp_pips:
             tp = (price + tp_pips * 10 * point) if order_type == mt5.ORDER_TYPE_BUY else (price - tp_pips * 10 * point)
+        
+        fill_mode = get_symbol_filling(sym)
             
         return {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -93,8 +110,9 @@ def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pip
             "sl": sl,
             "tp": tp,
             "magic": magic,
+            "comment": f"EA:{level_key}",
             "deviation": deviation,
-            "type_filling": mt5.ORDER_FILLING_IOC,
+            "type_filling": fill_mode,
         }
 
     req1 = get_req(symbol1, type1)
@@ -104,13 +122,34 @@ def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pip
         log_frontend("error", "Failed to get symbol ticks for pair entry")
         return False
 
+    # Log the requests for debugging
+    type1_str = "BUY" if type1 == mt5.ORDER_TYPE_BUY else "SELL"
+    type2_str = "BUY" if type2 == mt5.ORDER_TYPE_BUY else "SELL"
+    log_frontend("info", f"Sending: {type1_str} {symbol1} fill={req1['type_filling']} | {type2_str} {symbol2} fill={req2['type_filling']}")
+
     # 3. Synchronized Execution based on SymbolToTrade config
+    def send_with_retry(req):
+        """Try to send order. If rejected due to filling, retry with alternate fill mode."""
+        res = mt5.order_send(req)
+        if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+            return res
+        # If rejected, try alternate filling modes
+        if res and res.retcode in (10030, 10016):
+            for alt_fill in [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN]:
+                if alt_fill != req['type_filling']:
+                    req_retry = dict(req)
+                    req_retry['type_filling'] = alt_fill
+                    res2 = mt5.order_send(req_retry)
+                    if res2 and res2.retcode == mt5.TRADE_RETCODE_DONE:
+                        return res2
+        return res  # Return original failed result
+
     if sym_to_trade == "Sym1":
-        res1 = mt5.order_send(req1)
-        res2 = mt5.order_send(req2)
+        res1 = send_with_retry(req1)
+        res2 = send_with_retry(req2)
     else:
-        res2 = mt5.order_send(req2)
-        res1 = mt5.order_send(req1)
+        res2 = send_with_retry(req2)
+        res1 = send_with_retry(req1)
     
     end_time = time.time()
     latency_ms = int((end_time - start_time) * 1000)
@@ -118,12 +157,39 @@ def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pip
     t1 = res1.order if (res1 and res1.retcode == mt5.TRADE_RETCODE_DONE) else -1
     t2 = res2.order if (res2 and res2.retcode == mt5.TRADE_RETCODE_DONE) else -1
     
+    # Detailed per-trade logging
+    log_frontend("info", f"Trade Results: {type1_str} {symbol1} → ticket={t1} code={res1.retcode if res1 else 'None'} ({res1.comment if res1 else ''}) | {type2_str} {symbol2} → ticket={t2} code={res2.retcode if res2 else 'None'} ({res2.comment if res2 else ''})")
+    
     if t1 != -1 and t2 != -1:
+        # POST-TRADE VERIFICATION: Wait 500ms and check if both positions STILL exist
+        time.sleep(0.5)
+        pos1_check = mt5.positions_get(ticket=t1)
+        pos2_check = mt5.positions_get(ticket=t2)
+        p1_alive = pos1_check is not None and len(pos1_check) > 0
+        p2_alive = pos2_check is not None and len(pos2_check) > 0
+        
+        if not p1_alive or not p2_alive:
+            log_frontend("error", f"POST-TRADE CHECK FAILED! {type1_str} {symbol1} alive={p1_alive}, {type2_str} {symbol2} alive={p2_alive}")
+            # Close any surviving orphan
+            if p1_alive and not p2_alive:
+                log_frontend("error", f"Closing orphan {type1_str} {symbol1} ticket={t1}")
+                p = pos1_check[0]
+                tick = mt5.symbol_info_tick(p.symbol)
+                if tick:
+                    mt5.order_send({"action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume, "type": mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY, "position": p.ticket, "price": tick.bid if p.type == mt5.ORDER_TYPE_BUY else tick.ask, "magic": magic, "deviation": 10, "type_filling": get_symbol_filling(p.symbol)})
+            if p2_alive and not p1_alive:
+                log_frontend("error", f"Closing orphan {type2_str} {symbol2} ticket={t2}")
+                p = pos2_check[0]
+                tick = mt5.symbol_info_tick(p.symbol)
+                if tick:
+                    mt5.order_send({"action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume, "type": mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY, "position": p.ticket, "price": tick.bid if p.type == mt5.ORDER_TYPE_BUY else tick.ask, "magic": magic, "deviation": 10, "type_filling": get_symbol_filling(p.symbol)})
+            return False
+        
+        # Both positions confirmed alive
         pair_id = f"P_{int(time.time()*1000)}"
         new_pair = TradePair(pair_id, t1, t2, level_key, spread, lot)
         active_pairs.append(new_pair)
         
-        # Determine exact level and diff targets for logging
         try:
             parts = level_key.split(".")
             base_lvl = parts[0]
@@ -133,17 +199,49 @@ def place_pair(symbol1: str, symbol2: str, sym_to_trade: str, lot: float, sl_pip
         trade_type_str = "Buy" if is_buy else "Sell"
         log_frontend("trade", f"Level = {base_lvl} Difference to Place Trade = {spread} Current Difference = {spread}")
         log_frontend("trade", f"{trade_type_str} Trade Placed: {t1} {t2}")
+        log_frontend("trade", f"{type1_str} {symbol1} ticket={t1} | {type2_str} {symbol2} ticket={t2}")
         log_frontend("trade", f"Trade Ticket {t1} {t2} Of lvl {base_lvl} Is Added to Struct Array Size = {len(active_pairs)}", latency_ms)
         return True
     
-    if t1 != -1:
-        pass # mt5.Close() does not exist, would need to manually reverse build
-    if t2 != -1:
-        pass
+    # --- Partial Failure Cleanup ---
+    # If one trade opened but the other failed, we MUST close the orphan trade
+    def close_orphan(ticket, label):
+        pos = mt5.positions_get(ticket=ticket)
+        if pos and len(pos) > 0:
+            p = pos[0]
+            tick = mt5.symbol_info_tick(p.symbol)
+            if not tick:
+                log_frontend("error", f"Partial failure: Could not get tick for {p.symbol} to close orphan {label}={ticket}")
+                return
+                
+            close_pos_req = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": p.symbol,
+                "volume": p.volume,
+                "type": mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY,
+                "position": p.ticket,
+                "price": tick.bid if p.type == mt5.ORDER_TYPE_BUY else tick.ask,
+                "magic": magic,
+                "deviation": 10,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
+            res_c = mt5.order_send(close_pos_req)
+            log_frontend("info", f"Partial failure cleanup: Orphan {label}={ticket} close request sent. Code={res_c.retcode if res_c else 'None'}")
+
+    if t1 != -1 and t2 == -1:
+        log_frontend("error", f"Partial failure: t1={t1} opened but t2 failed. Closing t1.")
+        close_orphan(t1, "t1")
+
+    if t2 != -1 and t1 == -1:
+        log_frontend("error", f"Partial failure: t2={t2} opened but t1 failed. Closing t2.")
+        close_orphan(t2, "t2")
         
-    res1_code = res1.retcode if res1 else 'None'
-    res2_code = res2.retcode if res2 else 'None'
-    log_frontend("error", f"Error in placing Buy/Sell Trade: R1={res1_code}, R2={res2_code}")
+    res1_ret = res1.retcode if res1 else "No Response"
+    res2_ret = res2.retcode if res2 else "No Response"
+    res1_err = res1.comment if res1 else "Unknown"
+    res2_err = res2.comment if res2 else "Unknown"
+    
+    log_frontend("error", f"Trade Pairing Failed: R1={res1_ret} ({res1_err}), R2={res2_ret} ({res2_err})")
     return False
 
 def close_pair(pair: TradePair, sym_to_close: str, magic: int):
@@ -181,6 +279,53 @@ def close_pair(pair: TradePair, sym_to_close: str, magic: int):
     
     pair.status = "CLOSED"
     log_frontend("trade", f"Order Closed by close_trade_place_on_that_level(). Ticket: {pair.t1} {pair.t2}", latency_ms)
+
+
+def sync_active_pairs(magic: int, symbol1: str, symbol2: str):
+    """Scan MT5 for existing positions with magic number and restore active_pairs."""
+    global active_pairs
+    positions = mt5.positions_get(magic=magic)
+    if not positions:
+        return
+
+    # Group positions by comment (which contains the level_key)
+    groups = {}
+    for p in positions:
+        comment = p.comment
+        if not comment.startswith("EA:"):
+            continue
+        l_key = comment[3:]
+        if l_key not in groups:
+            groups[l_key] = []
+        groups[l_key].append(p)
+
+    for l_key, pos_list in groups.items():
+        # A valid pair must have exactly 2 positions
+        if len(pos_list) == 2:
+            # We want to maintain some order, but for restoration it matters less
+            p1, p2 = pos_list[0], pos_list[1]
+            pair_id = f"P_{int(time.time()*1000)}_{l_key}"
+            # Restore the TradePair object (spread is 0.0 as we don't know the exact entry spread at startup)
+            new_pair = TradePair(pair_id, p1.ticket, p2.ticket, l_key, 0.0, p1.volume)
+            active_pairs.append(new_pair)
+            log_frontend("info", f"Restored Trade Pair: {p1.ticket} {p2.ticket} for Level {l_key}")
+        else:
+            # If we find 1 or >2 positions for a level_key, they are 'orphans' and should be closed
+            # because they break the hedge strategy logic
+            log_frontend("error", f"Found orphan positions for Level {l_key}. Group size={len(pos_list)}. Closing them for safety.")
+            for p in pos_list:
+                close_pos_req = {
+                    "action": mt5.TRADE_ACTION_DEAL,
+                    "symbol": p.symbol,
+                    "volume": p.volume,
+                    "type": mt5.ORDER_TYPE_SELL if p.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY,
+                    "position": p.ticket,
+                    "price": mt5.symbol_info_tick(p.symbol).bid if p.type == mt5.ORDER_TYPE_BUY else mt5.symbol_info_tick(p.symbol).ask,
+                    "magic": magic,
+                    "deviation": 10,
+                    "type_filling": mt5.ORDER_FILLING_IOC,
+                }
+                mt5.order_send(close_pos_req)
 
 
 def run(path: str, login: str, config: dict):
@@ -226,25 +371,40 @@ def run(path: str, login: str, config: dict):
                 if not (name.startswith("XAUUSD") or name.startswith("GOLD")):
                     continue
                 
-                # Exclude XAUEUR or other non-USD pairs
-                if "EUR" in name or "GBP" in name:
+                # Exclude non-USD pairs, Micro/Cent pairs
+                if any(x in name for x in ["EUR", "GBP", "CHF", "JPY", "AUD", "CAD", "USC", "MICRO", "CENT"]):
                     continue
 
                 is_future = any(p in name for p in future_indicators)
                 
                 if is_future:
-                    if future is None: future = s.name
+                    if future is None: 
+                        future = s.name
+                    else:
+                        # Prefer GOLD futures over XAUUSD futures if both exist
+                        if "GOLD" in name and "XAUUSD" in future.upper():
+                            future = s.name
+                        elif len(s.name) < len(future):
+                            future = s.name
                 else:
-                    # Preference for spot: exact match > shortest name
+                    # Preference for spot: XAUUSD > GOLD > shortest name
                     if spot is None:
                         spot = s.name
                     else:
+                        spot_upper = spot.upper()
+                        # Exact matches are best
                         if name == "XAUUSD" or name == "GOLD":
                             spot = s.name
-                        elif len(s.name) < len(spot):
+                        # XAUUSD-based names are preferred over GOLD for spot
+                        elif "XAUUSD" in name and "XAUUSD" not in spot_upper:
                             spot = s.name
-            return spot, future
+                        # Tie-breaker: shortest name (usually the cleanest symbol)
+                        elif "XAUUSD" in name and "XAUUSD" in spot_upper and len(s.name) < len(spot):
+                            spot = s.name
+                        elif "GOLD" in name and "GOLD" in spot_upper and len(s.name) < len(spot):
+                            spot = s.name
 
+            return spot, future
         # First preference: Market Watch
         gold_spot_detected, gold_future_detected = detect_in_list([s for s in all_symbols if s.visible])
 
@@ -270,6 +430,26 @@ def run(path: str, login: str, config: dict):
     mt5.symbol_select(symbol1, True)
     mt5.symbol_select(symbol2, True)
 
+    # Log symbol trade capabilities
+    for sym in [symbol1, symbol2]:
+        si = mt5.symbol_info(sym)
+        if si:
+            # trade_mode: 0=disabled, 1=long_only, 2=short_only, 3=close_only, 4=full
+            trade_mode_names = {0: "DISABLED", 1: "LONG_ONLY", 2: "SHORT_ONLY", 3: "CLOSE_ONLY", 4: "FULL"}
+            filling_names = []
+            if si.filling_mode & 1: filling_names.append("FOK")
+            if si.filling_mode & 2: filling_names.append("IOC")
+            if not filling_names: filling_names.append("RETURN")
+            tm = trade_mode_names.get(si.trade_mode, f"UNKNOWN({si.trade_mode})")
+            log_frontend("info", f"Symbol {sym}: trade_mode={tm}, filling=[{','.join(filling_names)}], spread={si.spread}")
+            if si.trade_mode != 4:  # Not FULL
+                log_frontend("error", f"WARNING: {sym} is NOT in FULL trade mode ({tm}). Trades may be rejected!")
+        else:
+            log_frontend("error", f"Cannot get symbol info for {sym}!")
+
+    # Sync with existing positions on startup
+    sync_active_pairs(magic_no, symbol1, symbol2)
+
     print(json.dumps({"type": "started", "login": str(account_info.login), "balance": account_info.balance}), flush=True)
 
     # ── Stdin watcher thread ────────────────────────────────────────────────
@@ -282,6 +462,8 @@ def run(path: str, login: str, config: dict):
     last_spread = 0.0
     spread_dir = "stable"
     MAX_ACTIVE_TRADES = int(config.get("maxActiveTrades", 5))
+
+    last_diagnostic = 0.0
 
     # ── Main Loop ───────────────────────────────────────────────────────────
     while not _stop_flag.is_set():
@@ -321,6 +503,15 @@ def run(path: str, login: str, config: dict):
             elif diff_open < last_spread: spread_dir = "narrowing"
             
             last_spread = diff_open
+
+        # ── Diagnostic Logging (Every 5s) ──────────────────────────────────
+        if now - last_diagnostic >= 5.0:
+            last_diagnostic = now
+            if tick1 and tick2:
+                for idx, lvl in enumerate(levels):
+                    dt = float(lvl.get("diffToTrade", 0))
+                    if dt > 0:
+                        log_frontend("info", f"Check Lvl {idx+1}: Target={dt} Current={diff_open_buy if is_buy else diff_open_sell}")
 
         # ── Heartbeat every 500ms ─────────────────────────────────────────
         if now - last_heartbeat >= 0.5:

@@ -260,6 +260,56 @@ export class InstanceManager {
     }
   }
 
+  /**
+   * Run close_all_trades.py to close all open positions (optionally filtered by magic).
+   */
+  async closeAllTrades(userId: string, login: string, magic?: number): Promise<any> {
+    const instanceDir = this.getInstanceDir(userId, login);
+    const exePath = path.join(instanceDir, env.mt5TerminalExe);
+    const scriptPath = path.join(__dirname, '..', 'utils', 'close_all_trades.py');
+
+    let cmd = `python "${scriptPath}" --path "${exePath}" --login "${login}"`;
+    if (magic !== undefined && magic > 0) cmd += ` --magic ${magic}`;
+
+    try {
+      const { stdout, stderr } = await execPromise(cmd, { timeout: 30000 });
+      if (stderr && stderr.trim()) {
+        logger.debug('close_all_trades stderr:', { stderr, login, userId });
+      }
+      const lines = stdout.trim().split('\n');
+      const lastLine = lines[lines.length - 1] || '{}';
+      return JSON.parse(lastLine);
+    } catch (err: any) {
+      logger.error('Failed to close all trades', { error: err.message, login, userId });
+      return { status: 'failed', message: err.message };
+    }
+  }
+
+  /**
+   * Run the fetch_mt5_data.py script in history mode to get closed trade pairs.
+   */
+  async getHistory(userId: string, login: string, hours: number = 24, magic?: number): Promise<any> {
+    const instanceDir = this.getInstanceDir(userId, login);
+    const exePath = path.join(instanceDir, env.mt5TerminalExe);
+    const scriptPath = path.join(__dirname, '..', 'utils', 'fetch_mt5_data.py');
+
+    let cmd = `python "${scriptPath}" --path "${exePath}" --login "${login}" --history --hours ${hours}`;
+    if (magic !== undefined && magic > 0) cmd += ` --magic ${magic}`;
+
+    try {
+      const { stdout, stderr } = await execPromise(cmd, { timeout: 20000 });
+      if (stderr && stderr.trim()) {
+        logger.debug('MT5 fetch history stderr:', { stderr, login, userId });
+      }
+      const lines = stdout.trim().split('\n');
+      const lastLine = lines[lines.length - 1] || '{}';
+      return JSON.parse(lastLine);
+    } catch (err: any) {
+      logger.error('Failed to fetch MT5 history', { error: err.message, login, userId });
+      return { status: 'failed', message: err.message };
+    }
+  }
+
   // ── EA Engine ─────────────────────────────────────────────────────────────
 
   /**
@@ -315,9 +365,14 @@ export class InstanceManager {
               symbol2: msg.symbol2 || '',
               logs: msg.logs || [],
             });
-          } else if (msg.type === 'fatal' || msg.type === 'stopped') {
-            logger.warn('EA engine message', { userId, login, msg });
-            eaRegistry.unregister(userId, login);
+          } else {
+            // Log all non-heartbeat messages (trade, error, info, fatal, stopped) to Winston
+            const level = (msg.type === 'error' || msg.type === 'fatal') ? 'error' : 'info';
+            logger.log(level, `EA engine [${msg.type}]`, { userId, login, ...msg });
+
+            if (msg.type === 'fatal' || msg.type === 'stopped') {
+              eaRegistry.unregister(userId, login);
+            }
           }
         } catch { /* non-JSON output, ignore */ }
       }

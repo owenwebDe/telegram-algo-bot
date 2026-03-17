@@ -847,6 +847,45 @@
             font-weight: 800;
         }
 
+        .history-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .history-summary-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .history-summary-card .h-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .history-summary-card .h-val {
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(0, 212, 170, 0.12);
+            color: var(--accent);
+            margin-right: 6px;
+        }
+
         /* ── Overlays (Loader & Tour) ────────────────────────── */
         .overlay {
             position: fixed;
@@ -1312,15 +1351,32 @@
 
             <!-- HISTORY VIEW -->
             <div id="historyView" class="view">
-                <div class="section-header">
-                    Trade History
-                    <div style="display:flex;gap:8px">
-                        <span id="histFilterToday" onclick="histFilter('today')"
-                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--accent);color:#000;font-weight:700">Today</span>
-                        <span id="histFilterWeek" onclick="histFilter('week')"
-                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">Week</span>
-                        <span id="histFilterAll" onclick="histFilter('all')"
-                            style="cursor:pointer;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">All</span>
+                <div class="section-header">Trade History</div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+                    <span id="histFilter_3h"  onclick="histFilter('3h')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">3H</span>
+                    <span id="histFilter_6h"  onclick="histFilter('6h')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">6H</span>
+                    <span id="histFilter_12h" onclick="histFilter('12h')" style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">12H</span>
+                    <span id="histFilter_1d"  onclick="histFilter('1d')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--accent);color:#000;font-weight:700">1D</span>
+                    <span id="histFilter_3d"  onclick="histFilter('3d')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">3D</span>
+                    <span id="histFilter_1w"  onclick="histFilter('1w')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">1W</span>
+                    <span id="histFilter_1m"  onclick="histFilter('1m')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">1M</span>
+                    <span id="histFilter_3m"  onclick="histFilter('3m')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">3M</span>
+                    <span id="histFilter_6m"  onclick="histFilter('6m')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">6M</span>
+                    <span id="histFilter_1y"  onclick="histFilter('1y')"  style="cursor:pointer;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text-dim);font-weight:600">1Y</span>
+                </div>
+                <!-- Summary Stats -->
+                <div class="history-summary">
+                    <div class="history-summary-card">
+                        <div class="h-label">Total P&L</div>
+                        <div id="histTotalPnl" class="h-val">—</div>
+                    </div>
+                    <div class="history-summary-card">
+                        <div class="h-label">Trades</div>
+                        <div id="histTotalTrades" class="h-val">—</div>
+                    </div>
+                    <div class="history-summary-card">
+                        <div class="h-label">Win Rate</div>
+                        <div id="histWinRate" class="h-val">—</div>
                     </div>
                 </div>
                 <div id="historyList" class="settings-section" style="padding-top:0;padding-bottom:0">
@@ -1371,6 +1427,10 @@
 
             <div class="drawer-item" id="btnOpenGeneralSettings">⚙️ General Settings</div>
             <div class="drawer-item" onclick="contactSupport()">📩 Contact Support</div>
+            <div class="drawer-item danger" id="btnCloseAllTrades" style="display:flex;align-items:center;justify-content:space-between">
+                <span>⚠️ Close All Trades</span>
+                <span id="closeAllSpinner" style="display:none" class="spinner"></span>
+            </div>
             <div class="drawer-item danger" id="logoutBtn">Disconnect Account</div>
         </div>
     </div>
@@ -1497,6 +1557,7 @@
         bindClick('btnRobotConfigBack', hideRobotConfig);
         bindClick('btnOpenGeneralSettings', showGeneralSettings);
         bindClick('btnGeneralSettingsBack', hideGeneralSettings);
+        bindClick('btnCloseAllTrades', closeAllTrades);
 
         /* ── Authentication ────────────────────────────────────────────── */
         document.getElementById('connectBtn').addEventListener('click', function () {
@@ -1719,7 +1780,7 @@
         var levels = [];
         var maxLevels = 0;
         var eaStatusTimer = null;
-        var histPeriod = 'today';
+        var histPeriod = '1d';
         var subTier = 'free';
 
         function ensureAllLevels() {
@@ -2203,63 +2264,144 @@
 
         /* ── History Tab ──────────────────────────────────────────────── */
         var allHistory = [];
+        var histSummary = { total_profit: 0, total_trades: 0, wins: 0, losses: 0 };
+
+        // hours map — always integers, no float weirdness
+        var histHoursMap = {
+            '3h': 3, '6h': 6, '12h': 12,
+            '1d': 24, '3d': 72, '1w': 168,
+            '1m': 720, '3m': 2160, '6m': 4320, '1y': 8760
+        };
+        var histPeriods = ['3h','6h','12h','1d','3d','1w','1m','3m','6m','1y'];
 
         function histFilter(period) {
             histPeriod = period;
-            ['today', 'week', 'all'].forEach(function (p) {
-                var el = document.getElementById('histFilter' + p.charAt(0).toUpperCase() + p.slice(1));
-                if (el) {
-                    el.style.background = p === period ? 'var(--accent)' : 'var(--surface)';
-                    el.style.color = p === period ? '#000' : 'var(--text-dim)';
-                }
+            histPeriods.forEach(function (p) {
+                var el = document.getElementById('histFilter_' + p);
+                if (!el) return;
+                el.style.background = p === period ? 'var(--accent)' : 'var(--surface)';
+                el.style.color      = p === period ? '#000' : 'var(--text-dim)';
+                el.style.fontWeight = p === period ? '700' : '600';
             });
-            renderHistory();
+            fetchHistory(currentLogin);
         }
 
         function renderHistory() {
             var listEl = document.getElementById('historyList');
             if (!listEl) return;
-            var now = new Date();
-            var filtered = allHistory.filter(function (h) {
-                if (histPeriod === 'today') {
-                    var d = new Date(h.time * 1000);
-                    return d.toDateString() === now.toDateString();
-                } else if (histPeriod === 'week') {
-                    return (now - new Date(h.time * 1000)) < 7 * 86400 * 1000;
-                }
-                return true;
-            });
-            if (filtered.length === 0) {
-                listEl.innerHTML = '<p style="text-align:center;color:var(--text-dim);padding:40px">No history for this period.</p>';
+
+            // Update summary cards
+            var pnl = histSummary.total_profit || 0;
+            var pnlEl = document.getElementById('histTotalPnl');
+            if (pnlEl) {
+                pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+                pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--danger)';
+            }
+            var tradesEl = document.getElementById('histTotalTrades');
+            if (tradesEl) tradesEl.textContent = histSummary.total_trades || 0;
+
+            var winRateEl = document.getElementById('histWinRate');
+            if (winRateEl) {
+                var wr = histSummary.total_trades > 0
+                    ? Math.round((histSummary.wins / histSummary.total_trades) * 100)
+                    : 0;
+                winRateEl.textContent = wr + '%';
+                winRateEl.style.color = wr >= 50 ? 'var(--success)' : 'var(--danger)';
+            }
+
+            if (!allHistory || allHistory.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center;color:var(--text-dim);padding:40px">No closed trades for this period.</p>';
                 return;
             }
+
             var html = '';
-            for (var i = 0; i < filtered.length; i++) {
-                var h = filtered[i];
+            for (var i = 0; i < allHistory.length; i++) {
+                var h = allHistory[i];
                 var isProfit = h.profit >= 0;
                 var d = new Date(h.time * 1000);
                 var ds = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                var profitStr = (isProfit ? '+$' : '-$') + Math.abs(h.profit).toFixed(2);
+                var sym2part = h.sym2 ? ' <span style="color:var(--text-dim)">/</span> ' + h.sym2 : '';
                 html += '<div class="history-row">' +
                     '<div class="history-meta">' +
-                    '<div class="symbol">' + h.symbol + ' <span class="trade-icon ' + (h.type === 'buy' ? 'buy' : 'sell') + '" style="display:inline;padding:2px 6px;border-radius:4px;font-size:10px">' + h.type.toUpperCase() + '</span></div>' +
+                    '<div class="symbol"><span class="level-badge">' + (h.level || '—') + '</span>' + h.sym1 + sym2part + '</div>' +
                     '<div class="sub">' + h.volume + ' Lots · ' + ds + '</div>' +
                     '</div>' +
-                    '<div class="history-profit ' + (isProfit ? 'p-up' : 'p-down') + '">' + (isProfit ? '+' : '') + '$' + h.profit.toFixed(2) + '</div>' +
+                    '<div class="history-profit ' + (isProfit ? 'p-up' : 'p-down') + '">' + profitStr + '</div>' +
                     '</div>';
             }
             listEl.innerHTML = html;
         }
 
         function fetchHistory(login) {
+            if (!login) return;
             var initData = tg ? tg.initData : '';
-            fetch(API + '/api/mt5/data/' + login + '?history=1', { headers: { 'x-telegram-init-data': initData } })
+            var hours = histHoursMap[histPeriod] || 24;
+            var magic = document.getElementById('cfg_magicNo') ? (parseInt(document.getElementById('cfg_magicNo').value) || 0) : 0;
+            var url = API + '/api/mt5/history/' + login + '?hours=' + hours + (magic > 0 ? '&magic=' + magic : '');
+
+            var listEl = document.getElementById('historyList');
+            if (listEl) listEl.innerHTML = '<p style="text-align:center;color:var(--text-dim);padding:40px">Loading...</p>';
+
+            fetch(url, { headers: { 'x-telegram-init-data': initData } })
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
-                    if (d.status === 'success' && d.deals) {
-                        allHistory = d.deals;
+                    if (d.status === 'success') {
+                        allHistory = d.deals || [];
+                        histSummary = {
+                            total_profit: d.total_profit || 0,
+                            total_trades: d.total_trades || 0,
+                            wins:         d.wins         || 0,
+                            losses:       d.losses       || 0,
+                        };
                         renderHistory();
+                    } else {
+                        if (listEl) listEl.innerHTML = '<p style="text-align:center;color:var(--danger);padding:40px">Failed to load history.</p>';
                     }
-                }).catch(function () { });
+                }).catch(function () {
+                    if (listEl) listEl.innerHTML = '<p style="text-align:center;color:var(--danger);padding:40px">Connection error.</p>';
+                });
+        }
+
+        /* ── Close All Trades ────────────────────────────────────────── */
+        function closeAllTrades() {
+            if (!currentLogin) return;
+
+            var confirmed = confirm('⚠️ Close ALL open positions?\n\nThis will immediately close every open trade on your account. This cannot be undone.');
+            if (!confirmed) return;
+
+            var drawer  = document.getElementById('drawer');
+            var spinner = document.getElementById('closeAllSpinner');
+            var btn     = document.getElementById('btnCloseAllTrades');
+            if (drawer)  drawer.classList.remove('active');
+            if (spinner) spinner.style.display = 'inline-block';
+            if (btn)     btn.style.pointerEvents = 'none';
+
+            var initData = tg ? tg.initData : '';
+            var magic    = document.getElementById('cfg_magicNo') ? (parseInt(document.getElementById('cfg_magicNo').value) || 0) : 0;
+            var body     = magic > 0 ? JSON.stringify({ magic: magic }) : '{}';
+
+            fetch(API + '/api/mt5/close-all/' + currentLogin, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                body: body,
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (spinner) spinner.style.display = 'none';
+                    if (btn)     btn.style.pointerEvents = '';
+                    if (d.status === 'success' || d.status === 'partial') {
+                        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        alert('✅ ' + (d.message || 'Done'));
+                    } else {
+                        alert('❌ Failed: ' + (d.message || 'Unknown error'));
+                    }
+                })
+                .catch(function (e) {
+                    if (spinner) spinner.style.display = 'none';
+                    if (btn)     btn.style.pointerEvents = '';
+                    alert('❌ Error: ' + e.message);
+                });
         }
 
         /* ── Contact Support ─────────────────────────────────────────── */

@@ -5,6 +5,8 @@ import {
   connectAccount,
   getAccountStatusByLogin,
   disconnectAccount,
+  getTradeHistory,
+  closeAllAccountTrades,
 } from '../../services/mt5.service';
 import { logger } from '../../config/logger';
 
@@ -155,6 +157,67 @@ router.get(
 
       const { getAccountData } = await import('../../services/mt5.service');
       const data = await getAccountData(telegramId, login);
+
+      res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * POST /api/mt5/close-all/:login
+ *
+ * Closes all open MT5 positions for the account.
+ * Body: { magic?: number }  — if magic provided, only closes positions with that magic number.
+ */
+router.post(
+  '/close-all/:login',
+  telegramAuthMiddleware,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const login      = req.params.login as string;
+      const magic      = req.body?.magic ? parseInt(req.body.magic) : undefined;
+      const telegramId = req.telegramUser!.id;
+
+      if (!login) {
+        res.status(400).json({ error: 'BadRequest', message: 'Missing login param' });
+        return;
+      }
+
+      logger.info('Close all trades requested', { telegramId, login, magic });
+
+      const result = await closeAllAccountTrades(telegramId, login, magic);
+
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * GET /api/mt5/history/:login?days=1&magic=12345
+ *
+ * Returns closed trade pair history from MT5 deal history.
+ * days=1 → today, days=7 → week, days=90 → all
+ */
+router.get(
+  '/history/:login',
+  telegramAuthMiddleware,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const login  = req.params.login as string;
+      const hours  = Math.min(Math.max(parseInt(req.query['hours'] as string) || 24, 1), 8760);
+      const magic  = req.query['magic'] ? parseInt(req.query['magic'] as string) : undefined;
+      const telegramId = req.telegramUser!.id;
+
+      if (!login) {
+        res.status(400).json({ error: 'BadRequest', message: 'Missing login param' });
+        return;
+      }
+
+      const data = await getTradeHistory(telegramId, login, hours, magic);
 
       res.status(200).json(data);
     } catch (err) {
